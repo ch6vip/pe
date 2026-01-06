@@ -31,6 +31,11 @@ jobs:
       run: |
         mkdir -p ~/.gradle
         cat > ~/.gradle/init.gradle << 'EOF'
+        beforeSettings {
+            it.dependencyResolutionManagement {
+                repositoriesMode = RepositoriesMode.PREFER_PROJECT
+            }
+        }
         allprojects {
             buildscript {
                 repositories {
