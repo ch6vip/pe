@@ -16,24 +16,41 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
     
     - uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.27.1'
         cache: true
     
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        cache-read-only: false
+    - name: Test Maven Central connectivity
+      run: |
+        curl -I https://repo.maven.apache.org/maven2/com/squareup/javawriter/2.5.0/javawriter-2.5.0.pom || true
+        curl -I https://repo1.maven.org/maven2/com/squareup/javawriter/2.5.0/javawriter-2.5.0.pom || true
+    
+    - name: Configure Gradle to use repo1.maven.org
+      run: |
+        mkdir -p ~/.gradle
+        cat > ~/.gradle/init.gradle << 'EOF'
+        allprojects {
+            buildscript {
+                repositories {
+                    maven { url 'https://repo1.maven.org/maven2/' }
+                    google()
+                }
+            }
+            repositories {
+                maven { url 'https://repo1.maven.org/maven2/' }
+                google()
+            }
+        }
+        EOF
     
     - run: flutter pub get
     
     - name: Build APK
       run: flutter build apk --release
       env:
-        GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+        GRADLE_OPTS: "-Dorg.gradle.daemon=false"
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
