@@ -33,7 +33,19 @@ jobs:
         curl -I https://repo.maven.apache.org/maven2/com/squareup/javawriter/2.5.0/javawriter-2.5.0.pom || true
         curl -I https://repo1.maven.org/maven2/com/squareup/javawriter/2.5.0/javawriter-2.5.0.pom || true
     
+    - name: Clean build cache
+      run: |
+        flutter clean
+        cd android && ./gradlew clean || true
+    
     - run: flutter pub get
+    
+    - name: Verify package name
+      run: |
+        echo "=== Checking applicationId in build.gradle.kts ==="
+        grep -E "applicationId|namespace" android/app/build.gradle.kts
+        echo "=== Checking MainActivity package ==="
+        head -n 1 android/app/src/main/kotlin/com/pereader/app/MainActivity.kt
     
     - name: Build APK
       run: flutter build apk --release
