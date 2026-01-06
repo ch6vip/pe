@@ -8,29 +8,30 @@ pluginManagement {
             flutterSdkPath
         }
 
-    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle") {
-        dependencyResolutionManagement {
-            repositories {
-                google {
-                    url = uri("https://maven.aliyun.com/repository/google")
-                }
-                mavenCentral {
-                    url = uri("https://maven.aliyun.com/repository/public")
-                }
-            }
-        }
-    }
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
-        google {
-            url = uri("https://maven.aliyun.com/repository/google")
-        }
-        mavenCentral {
+        maven {
             url = uri("https://maven.aliyun.com/repository/public")
+            mavenContent {
+                includeGroupByRegex(".*")
+            }
+        }
+        maven {
+            url = uri("https://maven.aliyun.com/repository/google")
+            mavenContent {
+                includeGroupByRegex("com\.android\..*")
+                includeGroupByRegex("androidx\..*")
+            }
         }
         maven {
             url = uri("https://maven.aliyun.com/repository/gradle-plugin")
+            mavenContent {
+                includeGroupByRegex("com\.android\.tools\.build.*")
+                includeGroupByRegex("org\.jetbrains\.kotlin.*")
+            }
         }
+        gradlePluginPortal()
     }
 }
 
@@ -45,11 +46,18 @@ include(":app")
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
-        google {
-            url = uri("https://maven.aliyun.com/repository/google")
-        }
-        mavenCentral {
+        maven {
             url = uri("https://maven.aliyun.com/repository/public")
+            mavenContent {
+                includeGroupByRegex(".*")
+            }
+        }
+        maven {
+            url = uri("https://maven.aliyun.com/repository/google")
+            mavenContent {
+                includeGroupByRegex("com\.android\..*")
+                includeGroupByRegex("androidx\..*")
+            }
         }
     }
 }
