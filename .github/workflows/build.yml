@@ -31,16 +31,13 @@ jobs:
       run: |
         mkdir -p ~/.gradle
         cat > ~/.gradle/init.gradle << 'EOF'
-        allprojects {
-            buildscript {
+        settingsEvaluated { settings ->
+            settings.pluginManagement {
                 repositories {
                     maven { url 'https://repo1.maven.org/maven2/' }
                     google()
+                    gradlePluginPortal()
                 }
-            }
-            repositories {
-                maven { url 'https://repo1.maven.org/maven2/' }
-                google()
             }
         }
         EOF
