@@ -20,15 +20,15 @@ pluginManagement {
         maven {
             url = uri("https://maven.aliyun.com/repository/google")
             mavenContent {
-                includeGroupByRegex("com\.android\..*")
-                includeGroupByRegex("androidx\..*")
+                includeGroupByRegex("""com\.android\..*""")
+                includeGroupByRegex("""androidx\..*""")
             }
         }
         maven {
             url = uri("https://maven.aliyun.com/repository/gradle-plugin")
             mavenContent {
-                includeGroupByRegex("com\.android\.tools\.build.*")
-                includeGroupByRegex("org\.jetbrains\.kotlin.*")
+                includeGroupByRegex("""com\.android\.tools\.build.*""")
+                includeGroupByRegex("""org\.jetbrains\.kotlin.*""")
             }
         }
         gradlePluginPortal()
@@ -55,8 +55,8 @@ dependencyResolutionManagement {
         maven {
             url = uri("https://maven.aliyun.com/repository/google")
             mavenContent {
-                includeGroupByRegex("com\.android\..*")
-                includeGroupByRegex("androidx\..*")
+                includeGroupByRegex("""com\.android\..*""")
+                includeGroupByRegex("""androidx\..*""")
             }
         }
     }
