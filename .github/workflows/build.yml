@@ -31,15 +31,12 @@ jobs:
       run: |
         mkdir -p ~/.gradle
         cat > ~/.gradle/init.gradle << 'EOF'
+        import org.gradle.api.initialization.resolve.RepositoriesMode
+        
         beforeSettings { settings ->
-            settings.dependencyResolutionManagement {
-                repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
-                repositories {
-                    maven { url = uri("https://repo1.maven.org/maven2/") }
-                    google()
-                }
-            }
+            settings.dependencyResolutionManagement.repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
         }
+        
         allprojects {
             buildscript {
                 repositories {
