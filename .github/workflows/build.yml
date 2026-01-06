@@ -31,22 +31,6 @@ jobs:
       run: |
         mkdir -p ~/.gradle
         cat > ~/.gradle/init.gradle << 'EOF'
-        beforeSettings { settings ->
-            settings.pluginManagement {
-                repositories {
-                    maven { url 'https://repo1.maven.org/maven2/' }
-                    google()
-                    gradlePluginPortal()
-                }
-            }
-            settings.dependencyResolutionManagement {
-                repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
-                repositories {
-                    maven { url 'https://repo1.maven.org/maven2/' }
-                    google()
-                }
-            }
-        }
         allprojects {
             buildscript {
                 repositories {
