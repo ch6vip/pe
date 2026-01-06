@@ -31,13 +31,6 @@ jobs:
       run: |
         mkdir -p ~/.gradle/init.d
         cat > ~/.gradle/init.d/repos.gradle << 'EOF'
-        beforeSettings { settings ->
-            println ">>> init.d/repos.gradle: Setting PREFER_PROJECT mode"
-            settings.dependencyResolutionManagement {
-                repositoriesMode.set(org.gradle.api.initialization.resolve.RepositoriesMode.PREFER_PROJECT)
-            }
-        }
-        
         allprojects {
             buildscript {
                 repositories {
