@@ -31,7 +31,7 @@ jobs:
       run: |
         mkdir -p ~/.gradle
         cat > ~/.gradle/init.gradle << 'EOF'
-        settingsEvaluated { settings ->
+        beforeSettings { settings ->
             settings.pluginManagement {
                 repositories {
                     maven { url 'https://repo1.maven.org/maven2/' }
@@ -40,6 +40,7 @@ jobs:
                 }
             }
             settings.dependencyResolutionManagement {
+                repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
                 repositories {
                     maven { url 'https://repo1.maven.org/maven2/' }
                     google()
