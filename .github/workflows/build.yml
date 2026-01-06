@@ -27,35 +27,6 @@ jobs:
         curl -I https://repo.maven.apache.org/maven2/com/squareup/javawriter/2.5.0/javawriter-2.5.0.pom || true
         curl -I https://repo1.maven.org/maven2/com/squareup/javawriter/2.5.0/javawriter-2.5.0.pom || true
     
-    - name: Configure Gradle to use repo1.maven.org
-      run: |
-        mkdir -p ~/.gradle/init.d
-        cat > ~/.gradle/init.d/repos.gradle << 'EOF'
-        settingsEvaluated { settings ->
-            settings.pluginManagement {
-                repositories {
-                    maven { url 'https://repo1.maven.org/maven2/' }
-                    google()
-                    gradlePluginPortal()
-                }
-            }
-        }
-        allprojects {
-            buildscript {
-                repositories {
-                    maven { url 'https://repo1.maven.org/maven2/' }
-                    google()
-                    gradlePluginPortal()
-                }
-            }
-            repositories {
-                maven { url 'https://repo1.maven.org/maven2/' }
-                google()
-            }
-        }
-        EOF
-        cat ~/.gradle/init.d/repos.gradle
-    
     - run: flutter pub get
     
     - name: Build APK
