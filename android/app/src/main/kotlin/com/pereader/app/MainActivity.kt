@@ -1,4 +1,4 @@
-package com.example.reader_flutter
+package com.pereader.app
 
 import io.flutter.embedding.android.FlutterActivity
 

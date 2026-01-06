@@ -1,11 +1,11 @@
 {
-    "name": "reader_flutter",
-    "short_name": "reader_flutter",
+    "name": "PE 小说阅读器",
+    "short_name": "PE阅读器",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "PE 小说阅读器 - 一款简洁的小说阅读应用",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
