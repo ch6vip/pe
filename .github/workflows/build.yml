@@ -3,6 +3,8 @@ name: Build Flutter App
 on:
   push:
     branches: [ master ]
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -34,8 +36,19 @@ jobs:
       env:
         GRADLE_OPTS: "-Dorg.gradle.daemon=false"
     
-    - name: Upload APK
+    # 保留 artifact 用于普通 push 时查看
+    - name: Upload APK as Artifact
       uses: actions/upload-artifact@v4
       with:
         name: release-apk
         path: build/app/outputs/flutter-apk/app-release.apk
+    
+    # 当推送 tag 时，创建 Release 并直接上传 APK 文件
+    - name: Create Release and Upload APK
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: build/app/outputs/flutter-apk/app-release.apk
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
