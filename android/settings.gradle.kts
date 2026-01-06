@@ -8,7 +8,18 @@ pluginManagement {
             flutterSdkPath
         }
 
-    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle") {
+        dependencyResolutionManagement {
+            repositories {
+                google {
+                    url = uri("https://maven.aliyun.com/repository/google")
+                }
+                mavenCentral {
+                    url = uri("https://maven.aliyun.com/repository/public")
+                }
+            }
+        }
+    }
 
     repositories {
         google {
@@ -32,7 +43,7 @@ plugins {
 include(":app")
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google {
             url = uri("https://maven.aliyun.com/repository/google")
