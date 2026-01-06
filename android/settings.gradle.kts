@@ -17,6 +17,15 @@ pluginManagement {
     }
 }
 
+@Suppress("UnstableApiUsage")
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.PREFER_PROJECT
+    repositories {
+        maven { url = uri("https://repo1.maven.org/maven2/") }
+        google()
+    }
+}
+
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.9.1" apply false
