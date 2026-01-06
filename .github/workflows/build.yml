@@ -39,6 +39,25 @@ jobs:
                     gradlePluginPortal()
                 }
             }
+            settings.dependencyResolutionManagement {
+                repositories {
+                    maven { url 'https://repo1.maven.org/maven2/' }
+                    google()
+                }
+            }
+        }
+        allprojects {
+            buildscript {
+                repositories {
+                    maven { url 'https://repo1.maven.org/maven2/' }
+                    google()
+                    gradlePluginPortal()
+                }
+            }
+            repositories {
+                maven { url 'https://repo1.maven.org/maven2/' }
+                google()
+            }
         }
         EOF
     
