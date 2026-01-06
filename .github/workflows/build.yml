@@ -30,11 +30,12 @@ jobs:
     - name: Configure Gradle to use repo1.maven.org
       run: |
         mkdir -p ~/.gradle
-        cat > ~/.gradle/init.gradle << 'EOF'
-        import org.gradle.api.initialization.resolve.RepositoriesMode
-        
+        cat > ~/.gradle/init.d/repos.gradle << 'EOF'
         beforeSettings { settings ->
-            settings.dependencyResolutionManagement.repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+            println ">>> init.d/repos.gradle: Setting PREFER_PROJECT mode"
+            settings.dependencyResolutionManagement {
+                repositoriesMode.set(org.gradle.api.initialization.resolve.RepositoriesMode.PREFER_PROJECT)
+            }
         }
         
         allprojects {
@@ -51,6 +52,7 @@ jobs:
             }
         }
         EOF
+        cat ~/.gradle/init.d/repos.gradle
     
     - run: flutter pub get
     
