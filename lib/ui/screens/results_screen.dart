@@ -3,7 +3,11 @@ import 'package:reader_flutter/models/book.dart';
 import 'package:reader_flutter/services/api_service.dart';
 import 'package:reader_flutter/ui/screens/detail_screen.dart';
 
+/// 搜索结果页面
+///
+/// 显示搜索关键词匹配的书籍列表
 class ResultsScreen extends StatefulWidget {
+  /// 搜索关键词
   final String query;
 
   const ResultsScreen({super.key, required this.query});
@@ -14,8 +18,14 @@ class ResultsScreen extends StatefulWidget {
 
 class _ResultsScreenState extends State<ResultsScreen> {
   final ApiService _apiService = ApiService();
+
+  /// 搜索结果列表
   List<Book> _searchResults = [];
+
+  /// 是否正在加载
   bool _isLoading = true;
+
+  /// 错误信息
   String? _errorMessage;
 
   @override
@@ -24,25 +34,35 @@ class _ResultsScreenState extends State<ResultsScreen> {
     _searchBooks();
   }
 
+  /// 执行搜索
   Future<void> _searchBooks() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
+
     try {
       final results = await _apiService.searchBooks(widget.query);
+
+      if (!mounted) return;
+
       setState(() {
         _searchResults = results;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
+
       setState(() {
-        _errorMessage = '搜索失败，请稍后再试。';
+        _errorMessage = '搜索失败，请检查网络后重试';
         _isLoading = false;
       });
     }
   }
 
+  /// 跳转到书籍详情
   void _goToBookDetail(Book book) {
     Navigator.push(
       context,
@@ -54,101 +74,245 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('“${widget.query}”的搜索结果'),
+        title: Text('"${widget.query}"的搜索结果'),
         elevation: 0,
-        backgroundColor: Colors.grey.shade100,
-        foregroundColor: Colors.black87,
       ),
       backgroundColor: Colors.grey.shade100,
       body: _buildBody(),
     );
   }
 
+  /// 构建主体内容
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+
     if (_errorMessage != null) {
-      return Center(child: Text(_errorMessage!));
+      return _buildErrorState();
     }
+
     if (_searchResults.isEmpty) {
-      return const Center(child: Text('未找到相关书籍，请换个关键词试试。'));
+      return _buildEmptyState();
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: _searchResults.length,
-      itemBuilder: (context, index) {
-        final book = _searchResults[index];
-        return _buildBookCard(book);
-      },
+
+    return _buildResultsList();
+  }
+
+  /// 构建错误状态
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Colors.grey,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage!,
+            style: const TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _searchBooks,
+            child: const Text('重试'),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildBookCard(Book book) {
-    // Assuming creation_status '0' is completed, others are ongoing.
-    final isCompleted = book.description.contains('完结'); // A simple heuristic
+  /// 构建空结果状态
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            '未找到相关书籍',
+            style: TextStyle(fontSize: 18, color: Colors.black87),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '请换个关键词试试',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建搜索结果列表
+  Widget _buildResultsList() {
+    return RefreshIndicator(
+      onRefresh: _searchBooks,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _searchResults.length,
+        itemBuilder: (context, index) {
+          return _BookResultCard(
+            book: _searchResults[index],
+            onTap: () => _goToBookDetail(_searchResults[index]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// 书籍结果卡片组件
+class _BookResultCard extends StatelessWidget {
+  final Book book;
+  final VoidCallback onTap;
+
+  const _BookResultCard({
+    required this.book,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // 简单判断是否完结（基于简介内容）
+    final isCompleted = book.description.contains('完结');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.04),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shadowColor: Colors.black.withAlpha(10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: InkWell(
-        onTap: () => _goToBookDetail(book),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(book.coverUrl, width: 54, height: 72, fit: BoxFit.cover),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(book.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Text(book.author, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-                        const SizedBox(height: 8),
-                        Text(
-                          book.description, // Using description for meta as word count is not available
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              // 书籍信息行
+              _buildBookInfoRow(),
               const Divider(height: 24),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isCompleted ? Colors.grey : Colors.green,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    isCompleted ? '已完结' : '连载中',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                  ),
-                ],
-              )
+              // 状态行
+              _buildStatusRow(isCompleted),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// 构建书籍信息行
+  Widget _buildBookInfoRow() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 封面
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            book.coverUrl,
+            width: 54,
+            height: 72,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              width: 54,
+              height: 72,
+              color: Colors.grey.shade200,
+              child: const Icon(
+                Icons.image_not_supported,
+                size: 24,
+                color: Colors.grey,
+              ),
+            ),
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                width: 54,
+                height: 72,
+                color: Colors.grey.shade100,
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        // 文字信息
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 书名
+              Text(
+                book.name,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              // 作者
+              Text(
+                book.author,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // 简介
+              Text(
+                book.description,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建状态行
+  Widget _buildStatusRow(bool isCompleted) {
+    return Row(
+      children: [
+        // 状态指示点
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isCompleted ? Colors.grey : Colors.green,
+          ),
+        ),
+        const SizedBox(width: 6),
+        // 状态文字
+        Text(
+          isCompleted ? '已完结' : '连载中',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade700,
+          ),
+        ),
+      ],
     );
   }
 }

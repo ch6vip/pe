@@ -3,6 +3,9 @@ import 'package:reader_flutter/models/book.dart';
 import 'package:reader_flutter/ui/screens/reader_screen.dart';
 import 'package:reader_flutter/services/storage_service.dart';
 
+/// 书架页面
+///
+/// 显示用户收藏的书籍，支持按最近阅读或添加时间排序
 class BookshelfScreen extends StatefulWidget {
   const BookshelfScreen({super.key});
 
@@ -10,12 +13,27 @@ class BookshelfScreen extends StatefulWidget {
   State<BookshelfScreen> createState() => _BookshelfScreenState();
 }
 
-class _BookshelfScreenState extends State<BookshelfScreen> with WidgetsBindingObserver {
+class _BookshelfScreenState extends State<BookshelfScreen>
+    with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   final StorageService _storageService = StorageService();
+
+  /// 原始书籍列表
   List<Book> _books = [];
+
+  /// 排序后的书籍列表
   List<Book> _sortedBooks = [];
-  String _sortOrder = 'byReadTime';
+
+  /// 当前排序方式
+  SortOrder _sortOrder = SortOrder.byReadTime;
+
+  /// 是否正在加载
   bool _isLoading = true;
+
+  /// 错误信息
+  String? _errorMessage;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -32,49 +50,76 @@ class _BookshelfScreenState extends State<BookshelfScreen> with WidgetsBindingOb
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Reload bookshelf when app is resumed, similar to onShow()
+    // 当应用从后台恢复时刷新书架
     if (state == AppLifecycleState.resumed) {
       _loadBookshelf();
     }
   }
 
+  /// 加载书架数据
   Future<void> _loadBookshelf() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
-    final sortOrder = await _storageService.getSortOrder();
-    final books = await _storageService.getBookshelf();
-    setState(() {
-      _sortOrder = sortOrder;
-      _books = books;
-      _sortBooks();
-      _isLoading = false;
-    });
+
+    try {
+      final sortOrder = await _storageService.getSortOrder();
+      final books = await _storageService.getBookshelf();
+
+      if (!mounted) return;
+
+      setState(() {
+        _sortOrder = sortOrder;
+        _books = books;
+        _sortBooks();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = '加载书架失败，请稍后重试';
+        _isLoading = false;
+      });
+    }
   }
 
+  /// 对书籍进行排序
   void _sortBooks() {
-    final books = [..._books];
-    if (_sortOrder == 'byReadTime') {
-      books.sort((a, b) => (b.lastReadTime ?? 0).compareTo(a.lastReadTime ?? 0));
-    } else if (_sortOrder == 'byAddTime') {
-      books.sort((a, b) => (b.addTime ?? 0).compareTo(a.addTime ?? 0));
+    final books = List<Book>.from(_books);
+
+    switch (_sortOrder) {
+      case SortOrder.byReadTime:
+        books.sort(
+            (a, b) => (b.lastReadTime ?? 0).compareTo(a.lastReadTime ?? 0));
+      case SortOrder.byAddTime:
+        books.sort((a, b) => (b.addTime ?? 0).compareTo(a.addTime ?? 0));
     }
+
     _sortedBooks = books;
   }
 
-  Future<void> _setSortOrder(String order) async {
+  /// 设置排序方式
+  Future<void> _setSortOrder(SortOrder order) async {
+    if (order == _sortOrder) return;
+
     await _storageService.saveSortOrder(order);
+
     setState(() {
       _sortOrder = order;
       _sortBooks();
     });
   }
 
+  /// 处理长按删除书籍
   Future<void> _handleLongPress(Book book) async {
-    final bool? confirm = await showDialog(
+    final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('提示'),
+        title: const Text('移除书籍'),
         content: Text('确定要从书架移除《${book.name}》吗？'),
         actions: [
           TextButton(
@@ -83,23 +128,59 @@ class _BookshelfScreenState extends State<BookshelfScreen> with WidgetsBindingOb
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('确定'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('移除'),
           ),
         ],
       ),
     );
 
-    if (confirm == true) {
-      await _storageService.removeBookFromShelf(book.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已移除'), duration: Duration(seconds: 1)),
-      );
-      _loadBookshelf(); // Refresh the list
+    if (confirm == true && mounted) {
+      try {
+        await _storageService.removeBookFromShelf(book.id);
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('已移除《${book.name}》'),
+            duration: const Duration(seconds: 2),
+            action: SnackBarAction(
+              label: '撤销',
+              onPressed: () async {
+                await _storageService.addBookToShelf(book);
+                _loadBookshelf();
+              },
+            ),
+          ),
+        );
+
+        _loadBookshelf();
+      } catch (e) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('移除失败，请稍后重试')),
+        );
+      }
     }
+  }
+
+  /// 打开阅读器
+  void _openReader(Book book) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ReaderScreen(book: book)),
+    ).then((_) {
+      // 返回时刷新书架以更新阅读进度
+      _loadBookshelf();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // 用于 AutomaticKeepAliveClientMixin
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -110,13 +191,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> with WidgetsBindingOb
             children: [
               _buildHeader(),
               _buildSortControls(),
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _sortedBooks.isEmpty
-                        ? _buildEmptyState()
-                        : _buildBookshelfGrid(),
-              ),
+              Expanded(child: _buildContent()),
             ],
           ),
         ),
@@ -124,34 +199,150 @@ class _BookshelfScreenState extends State<BookshelfScreen> with WidgetsBindingOb
     );
   }
 
+  /// 构建页面标题
   Widget _buildHeader() {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 10.0),
       child: Text(
         '我的书架',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 
+  /// 构建排序控制按钮
   Widget _buildSortControls() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
       child: Row(
         children: [
-          _buildSortButton('byReadTime', '最近阅读'),
+          _SortButton(
+            text: '最近阅读',
+            isActive: _sortOrder == SortOrder.byReadTime,
+            onTap: () => _setSortOrder(SortOrder.byReadTime),
+          ),
           const SizedBox(width: 10),
-          _buildSortButton('byAddTime', '最近添加'),
+          _SortButton(
+            text: '最近添加',
+            isActive: _sortOrder == SortOrder.byAddTime,
+            onTap: () => _setSortOrder(SortOrder.byAddTime),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSortButton(String order, String text) {
-    final bool isActive = _sortOrder == order;
+  /// 构建主内容区域
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return _buildErrorState();
+    }
+
+    if (_sortedBooks.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return _buildBookshelfGrid();
+  }
+
+  /// 构建错误状态
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage!,
+            style: const TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadBookshelf,
+            child: const Text('重试'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建空状态
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.book_outlined,
+            size: 80,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            '书架空空如也',
+            style: TextStyle(fontSize: 18, color: Colors.black87),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '快去"搜索"页面发现好书吧！',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建书架网格
+  Widget _buildBookshelfGrid() {
+    return RefreshIndicator(
+      onRefresh: _loadBookshelf,
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 15,
+          mainAxisSpacing: 25,
+          childAspectRatio: 3 / 5.5,
+        ),
+        itemCount: _sortedBooks.length,
+        itemBuilder: (context, index) {
+          final book = _sortedBooks[index];
+          return _BookGridItem(
+            book: book,
+            onTap: () => _openReader(book),
+            onLongPress: () => _handleLongPress(book),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// 排序按钮组件
+class _SortButton extends StatelessWidget {
+  final String text;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _SortButton({
+    required this.text,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _setSortOrder(order),
-      child: Container(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
         decoration: BoxDecoration(
           color: isActive ? Colors.blue : const Color(0xFFF5F5F5),
@@ -168,82 +359,81 @@ class _BookshelfScreenState extends State<BookshelfScreen> with WidgetsBindingOb
       ),
     );
   }
+}
 
-  Widget _buildEmptyState() {
-    return Center(
+/// 书籍网格项组件
+class _BookGridItem extends StatelessWidget {
+  final Book book;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  const _BookGridItem({
+    required this.book,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Assuming you have added the empty.png to your assets folder
-          // and declared it in pubspec.yaml
-          Image.asset('assets/empty.png', width: 100, height: 100, errorBuilder: (c,e,s) => const Icon(Icons.image_not_supported, size: 100)),
-          const SizedBox(height: 20),
-          const Text('书架空空如也', style: TextStyle(fontSize: 18, color: Colors.black87)),
-          const SizedBox(height: 10),
-          Text('快去“搜索”页面发现好书吧！', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBookshelfGrid() {
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 15,
-        mainAxisSpacing: 25,
-        childAspectRatio: 3 / 5.5, // Adjusted aspect ratio for more text space
-      ),
-      itemCount: _sortedBooks.length,
-      itemBuilder: (context, index) {
-        final book = _sortedBooks[index];
-        return GestureDetector(
-          onLongPress: () => _handleLongPress(book),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ReaderScreen(book: book)),
-            );
-          },
-          child: _buildBookItem(book),
-        );
-      },
-    );
-  }
-
-  Widget _buildBookItem(Book book) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AspectRatio(
-          aspectRatio: 3 / 4,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8.0),
-            child: Image.network(
-              book.coverUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey[200],
-                child: const Icon(Icons.image_not_supported, color: Colors.grey),
+          // 封面图片
+          Expanded(
+            child: AspectRatio(
+              aspectRatio: 3 / 4,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8.0),
+                child: Image.network(
+                  book.coverUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      color: Colors.grey.shade100,
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          book.name,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 5),
-        Text(
-          book.lastReadChapterTitle ?? '尚未阅读',
-          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+          const SizedBox(height: 10),
+          // 书名
+          Text(
+            book.name,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 5),
+          // 阅读进度
+          Text(
+            book.lastReadChapterTitle ?? '尚未阅读',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 }

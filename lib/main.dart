@@ -1,22 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:reader_flutter/ui/main_scaffold.dart';
 
+/// 应用入口函数
 void main() {
-  runApp(const MyApp());
+  // 确保 Flutter 绑定初始化
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 设置系统 UI 样式
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
+
+  runApp(const PeReaderApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+/// PE 阅读器应用根组件
+class PeReaderApp extends StatelessWidget {
+  const PeReaderApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PE 阅读器',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: _buildTheme(),
       home: const MainScaffold(),
+    );
+  }
+
+  /// 构建应用主题
+  ThemeData _buildTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: Brightness.light,
+      ),
+      visualDensity: VisualDensity.adaptivePlatformDensity,
+      // AppBar 主题
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        surfaceTintColor: Colors.transparent,
+      ),
+      // 卡片主题
+      cardTheme: const CardThemeData(
+        elevation: 2,
+      ),
+      // 底部导航栏主题
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        elevation: 8,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+      ),
     );
   }
 }

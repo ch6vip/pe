@@ -1,38 +1,99 @@
+/// 章节内容数据模型
+///
+/// 用于表示小说章节的具体内容，包含标题和正文
 class ChapterContent {
+  /// 章节标题
   final String title;
+
+  /// 章节正文内容（已处理过的纯文本）
   final String content;
 
-  // 定义静态常量正则，避免重复创建
-  static final _pTagStart = RegExp(r'<p[^>]*>');
-  static final _pTagEnd = RegExp(r'</p>');
-  static final _allTags = RegExp(r'<[^>]*>');
+  /// HTML 段落起始标签正则（如 <p>, <p class="...">）
+  static final RegExp _pTagStartPattern = RegExp(r'<p[^>]*>');
 
-  ChapterContent({
+  /// HTML 段落结束标签正则
+  static final RegExp _pTagEndPattern = RegExp(r'</p>');
+
+  /// 所有 HTML 标签正则
+  static final RegExp _allTagsPattern = RegExp(r'<[^>]*>');
+
+  const ChapterContent({
     required this.title,
     required this.content,
   });
 
+  /// 从 JSON Map 创建 ChapterContent 实例
+  ///
+  /// 预期的 JSON 格式：
+  /// ```json
+  /// {
+  ///   "data": {
+  ///     "title": "第一章 开始",
+  ///     "content": "<p>正文内容...</p>"
+  ///   }
+  /// }
+  /// ```
+  ///
+  /// 会自动处理 HTML 标签，将内容转换为纯文本
+  ///
+  /// Throws:
+  /// - [FormatException] 当 JSON 格式不正确或缺少必要字段时
   factory ChapterContent.fromJson(Map<String, dynamic> json) {
-    // 假设外层已经判断过 json['data']
-    final data = json['data'];
+    final dynamic data = json['data'];
 
-    if (data == null || data['content'] == null) {
-      // 建议抛出异常，让 UI 层决定怎么显示
-      throw Exception('Data missing');
+    if (data == null) {
+      throw const FormatException('章节数据缺失：响应中缺少 data 字段');
     }
 
-    String rawContent = data['content'] as String;
-    
-    // 更加健壮的处理方式
-    String processedContent = rawContent
-        .replaceAll(_pTagStart, '')      // 移除 <p> 或 <p class="...">
-        .replaceAll(_pTagEnd, '\n\n')    // 替换结束标签为换行
-        .replaceAll(_allTags, '')        // 移除其他所有标签
-        .trim();
+    if (data is! Map<String, dynamic>) {
+      throw const FormatException('章节数据格式错误：data 字段格式不正确');
+    }
+
+    final dynamic rawContent = data['content'];
+    if (rawContent == null) {
+      throw const FormatException('章节内容缺失：响应中缺少 content 字段');
+    }
+
+    final String processedContent = _processHtmlContent(rawContent.toString());
 
     return ChapterContent(
-      title: data['title']?.toString() ?? '未知标题',
+      title: (data['title'] as String?) ?? '未知标题',
       content: processedContent,
     );
   }
+
+  /// 处理 HTML 内容，移除标签并格式化换行
+  ///
+  /// 处理流程：
+  /// 1. 移除 <p> 起始标签
+  /// 2. 将 </p> 结束标签替换为双换行
+  /// 3. 移除其他所有 HTML 标签
+  /// 4. 去除首尾空白
+  static String _processHtmlContent(String rawContent) {
+    return rawContent
+        .replaceAll(_pTagStartPattern, '')
+        .replaceAll(_pTagEndPattern, '\n\n')
+        .replaceAll(_allTagsPattern, '')
+        .trim();
+  }
+
+  /// 将 ChapterContent 实例转换为 JSON Map
+  Map<String, dynamic> toJson() {
+    return {
+      'data': {
+        'title': title,
+        'content': content,
+      },
+    };
+  }
+
+  /// 检查内容是否为空
+  bool get isEmpty => content.isEmpty;
+
+  /// 检查内容是否不为空
+  bool get isNotEmpty => content.isNotEmpty;
+
+  @override
+  String toString() =>
+      'ChapterContent(title: $title, contentLength: ${content.length})';
 }
