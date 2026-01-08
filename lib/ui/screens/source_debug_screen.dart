@@ -66,7 +66,7 @@ class _SourceDebugScreenState extends State<SourceDebugScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('调试书源：${widget.source.name}'),
+        title: Text('调试书源：${widget.source.bookSourceName}'),
         elevation: 0,
         actions: [
           // 清空日志按钮

@@ -218,7 +218,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
     SourceManagerService sourceService,
   ) {
     return Dismissible(
-      key: Key(source.id),
+      key: Key(source.bookSourceUrl),
       direction: DismissDirection.endToStart,
       onDismissed: (direction) {
         _confirmDeleteSource(source, sourceService);
@@ -241,7 +241,9 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
                 ? Theme.of(context).colorScheme.primary
                 : Colors.grey,
             child: Text(
-              source.name.isNotEmpty ? source.name[0].toUpperCase() : '?',
+              source.bookSourceName.isNotEmpty
+                  ? source.bookSourceName[0].toUpperCase()
+                  : '?',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -250,7 +252,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
           ),
           // 书源名称和 URL
           title: Text(
-            source.name,
+            source.bookSourceName,
             style: TextStyle(
               fontWeight: FontWeight.w600,
               color: source.enabled ? null : Colors.grey,
@@ -260,7 +262,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                source.baseUrl,
+                source.bookSourceUrl,
                 style: TextStyle(
                   fontSize: 12,
                   color: source.enabled ? Colors.grey[600] : Colors.grey[400],
@@ -268,11 +270,6 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (source.author != null)
-                Text(
-                  '作者: ${source.author}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                ),
             ],
           ),
           // 操作按钮区域
@@ -291,7 +288,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
               Switch(
                 value: source.enabled,
                 onChanged: (value) {
-                  sourceService.toggleSourceEnabled(source.id);
+                  sourceService.toggleSourceEnabled(source.bookSourceUrl);
                 },
               ),
             ],
@@ -322,7 +319,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('确认删除'),
-        content: Text('确定要删除书源「${source.name}」吗？\n此操作不可撤销。'),
+        content: Text('确定要删除书源「${source.bookSourceName}」吗？\n此操作不可撤销。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -330,7 +327,8 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final success = await sourceService.deleteSource(source.id);
+              final success =
+                  await sourceService.deleteSource(source.bookSourceUrl);
               Navigator.pop(dialogContext);
               if (success && mounted) {
                 ScaffoldMessenger.of(

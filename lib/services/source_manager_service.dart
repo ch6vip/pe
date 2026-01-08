@@ -92,22 +92,21 @@ class SourceManagerService extends ChangeNotifier {
     try {
       _setLoading(true);
 
-      // 检查是否已存在相同 ID 的书源
-      if (_sources.any((s) => s.id == source.id)) {
-        _setError('已存在相同 ID 的书源');
+      // 检查是否已存在相同 URL 的书源
+      if (_sources.any((s) => s.bookSourceUrl == source.bookSourceUrl)) {
+        _setError('已存在相同 URL 的书源');
         return false;
       }
 
       // 检查是否已存在相同名称的书源
-      if (_sources.any((s) => s.name == source.name)) {
+      if (_sources.any((s) => s.bookSourceName == source.bookSourceName)) {
         _setError('已存在相同名称的书源');
         return false;
       }
 
       // 创建带有时间戳的新书源
       final newSource = source.copyWith(
-        createTime: DateTime.now().millisecondsSinceEpoch,
-        updateTime: DateTime.now().millisecondsSinceEpoch,
+        lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
       );
 
       _sources.add(newSource);
@@ -123,7 +122,7 @@ class SourceManagerService extends ChangeNotifier {
   }
 
   /// 根据名称和 URL 创建并添加新书源（简化版导入）
-  Future<bool> addSimpleSource(String name, String baseUrl) async {
+  Future<bool> addSimpleSource(String name, String bookSourceUrl) async {
     try {
       // 验证输入
       if (name.trim().isEmpty) {
@@ -131,22 +130,21 @@ class SourceManagerService extends ChangeNotifier {
         return false;
       }
 
-      if (baseUrl.trim().isEmpty) {
+      if (bookSourceUrl.trim().isEmpty) {
         _setError('书源地址不能为空');
         return false;
       }
 
       // 标准化 URL
-      String normalizedUrl = baseUrl.trim();
+      String normalizedUrl = bookSourceUrl.trim();
       if (!normalizedUrl.startsWith('http://') &&
           !normalizedUrl.startsWith('https://')) {
         normalizedUrl = 'https://$normalizedUrl';
       }
 
       final newSource = BookSource(
-        id: BookSource.generateId(),
-        name: name.trim(),
-        baseUrl: normalizedUrl,
+        bookSourceUrl: normalizedUrl,
+        bookSourceName: name.trim(),
         enabled: true,
       );
 
@@ -163,7 +161,7 @@ class SourceManagerService extends ChangeNotifier {
       _setLoading(true);
 
       final index = _sources.indexWhere(
-        (source) => source.id == updatedSource.id,
+        (source) => source.bookSourceUrl == updatedSource.bookSourceUrl,
       );
       if (index == -1) {
         _setError('未找到要更新的书源');
@@ -172,7 +170,7 @@ class SourceManagerService extends ChangeNotifier {
 
       // 更新时间戳
       final sourceWithTimestamp = updatedSource.copyWith(
-        updateTime: DateTime.now().millisecondsSinceEpoch,
+        lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
       );
 
       _sources[index] = sourceWithTimestamp;
@@ -188,9 +186,10 @@ class SourceManagerService extends ChangeNotifier {
   }
 
   /// 切换书源启用状态
-  Future<bool> toggleSourceEnabled(String sourceId) async {
+  Future<bool> toggleSourceEnabled(String sourceUrl) async {
     try {
-      final index = _sources.indexWhere((source) => source.id == sourceId);
+      final index =
+          _sources.indexWhere((source) => source.bookSourceUrl == sourceUrl);
       if (index == -1) {
         _setError('未找到要切换的书源');
         return false;
@@ -198,7 +197,7 @@ class SourceManagerService extends ChangeNotifier {
 
       final updatedSource = _sources[index].copyWith(
         enabled: !_sources[index].enabled,
-        updateTime: DateTime.now().millisecondsSinceEpoch,
+        lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
       );
 
       _sources[index] = updatedSource;
@@ -212,12 +211,12 @@ class SourceManagerService extends ChangeNotifier {
   }
 
   /// 删除书源
-  Future<bool> deleteSource(String sourceId) async {
+  Future<bool> deleteSource(String sourceUrl) async {
     try {
       _setLoading(true);
 
       final originalLength = _sources.length;
-      _sources.removeWhere((source) => source.id == sourceId);
+      _sources.removeWhere((source) => source.bookSourceUrl == sourceUrl);
 
       if (_sources.length == originalLength) {
         _setError('未找到要删除的书源');
@@ -235,10 +234,10 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 根据ID获取书源
-  BookSource? getSourceById(String sourceId) {
+  /// 根据URL获取书源
+  BookSource? getSourceByUrl(String sourceUrl) {
     try {
-      return _sources.firstWhere((source) => source.id == sourceId);
+      return _sources.firstWhere((source) => source.bookSourceUrl == sourceUrl);
     } catch (e) {
       return null;
     }
@@ -370,30 +369,30 @@ class SourceManagerService extends ChangeNotifier {
         bool shouldAdd = true;
         bool shouldUpdate = false;
 
-        // 如果存在相同 baseUrl，则更新
-        if (_sources.any((s) => s.baseUrl == source.baseUrl)) {
+        // 如果存在相同 bookSourceUrl，则更新
+        if (_sources.any((s) => s.bookSourceUrl == source.bookSourceUrl)) {
           shouldAdd = false;
           shouldUpdate = true;
         }
-        // 如果存在相同名称但不同 baseUrl，则跳过（避免重复）
-        else if (_sources.any((s) => s.name == source.name)) {
+        // 如果存在相同名称但不同 bookSourceUrl，则跳过（避免重复）
+        else if (_sources
+            .any((s) => s.bookSourceName == source.bookSourceName)) {
           shouldAdd = false;
         }
 
         if (shouldUpdate) {
           // 更新现有书源
-          final index = _sources.indexWhere((s) => s.baseUrl == source.baseUrl);
+          final index = _sources
+              .indexWhere((s) => s.bookSourceUrl == source.bookSourceUrl);
           final updatedSource = source.copyWith(
-            id: _sources[index].id, // 保持原有 ID
-            updateTime: DateTime.now().millisecondsSinceEpoch,
+            lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
           );
           _sources[index] = updatedSource;
           importedCount++;
         } else if (shouldAdd) {
           // 添加新书源
           final newSource = source.copyWith(
-            createTime: DateTime.now().millisecondsSinceEpoch,
-            updateTime: DateTime.now().millisecondsSinceEpoch,
+            lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
           );
           _sources.add(newSource);
           importedCount++;

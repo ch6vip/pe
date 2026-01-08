@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/book_source.dart';
@@ -24,9 +26,6 @@ class _SourceEditScreenState extends State<SourceEditScreen>
   // 表单控制器
   late final TextEditingController _nameController;
   late final TextEditingController _baseUrlController;
-  late final TextEditingController _iconUrlController;
-  late final TextEditingController _authorController;
-  late final TextEditingController _versionController;
   late final TextEditingController _ruleSearchController;
   late final TextEditingController _ruleChapterController;
   late final TextEditingController _ruleContentController;
@@ -46,9 +45,6 @@ class _SourceEditScreenState extends State<SourceEditScreen>
     // 初始化表单控制器
     _nameController = TextEditingController();
     _baseUrlController = TextEditingController();
-    _iconUrlController = TextEditingController();
-    _authorController = TextEditingController();
-    _versionController = TextEditingController();
     _ruleSearchController = TextEditingController();
     _ruleChapterController = TextEditingController();
     _ruleContentController = TextEditingController();
@@ -61,15 +57,12 @@ class _SourceEditScreenState extends State<SourceEditScreen>
 
   /// 初始化表单数据（编辑模式）
   void _initializeFormData(BookSource source) {
-    _nameController.text = source.name;
-    _baseUrlController.text = source.baseUrl;
-    _iconUrlController.text = source.iconUrl ?? '';
-    _authorController.text = source.author ?? '';
-    _versionController.text = source.version ?? '';
+    _nameController.text = source.bookSourceName;
+    _baseUrlController.text = source.bookSourceUrl;
     _enabled = source.enabled;
-    _ruleSearchController.text = source.ruleSearch;
-    _ruleChapterController.text = source.ruleChapter;
-    _ruleContentController.text = source.ruleContent;
+    _ruleSearchController.text = _encodeRuleJson(source.ruleSearch?.toJson());
+    _ruleChapterController.text = _encodeRuleJson(source.ruleToc?.toJson());
+    _ruleContentController.text = _encodeRuleJson(source.ruleContent?.toJson());
   }
 
   @override
@@ -77,9 +70,6 @@ class _SourceEditScreenState extends State<SourceEditScreen>
     _tabController.dispose();
     _nameController.dispose();
     _baseUrlController.dispose();
-    _iconUrlController.dispose();
-    _authorController.dispose();
-    _versionController.dispose();
     _ruleSearchController.dispose();
     _ruleChapterController.dispose();
     _ruleContentController.dispose();
@@ -184,46 +174,6 @@ class _SourceEditScreenState extends State<SourceEditScreen>
             },
             keyboardType: TextInputType.url,
             textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 16),
-
-          // 图标URL（可选）
-          TextFormField(
-            controller: _iconUrlController,
-            decoration: const InputDecoration(
-              labelText: '图标URL',
-              hintText: '书源图标的网络地址',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.image),
-            ),
-            keyboardType: TextInputType.url,
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 16),
-
-          // 作者（可选）
-          TextFormField(
-            controller: _authorController,
-            decoration: const InputDecoration(
-              labelText: '书源作者',
-              hintText: '书源规则的作者',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person),
-            ),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 16),
-
-          // 版本（可选）
-          TextFormField(
-            controller: _versionController,
-            decoration: const InputDecoration(
-              labelText: '版本号',
-              hintText: '例如：1.0.0',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.tag),
-            ),
-            textInputAction: TextInputAction.done,
           ),
           const SizedBox(height: 16),
 
@@ -385,6 +335,26 @@ class _SourceEditScreenState extends State<SourceEditScreen>
     );
   }
 
+  Map<String, dynamic>? _parseRuleJson(String text) {
+    if (text.trim().isEmpty) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(text);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  String _encodeRuleJson(Map<String, dynamic>? json) {
+    if (json == null || json.isEmpty) {
+      return '';
+    }
+    return const JsonEncoder.withIndent('  ').convert(json);
+  }
+
   /// 保存书源
   Future<void> _saveSource() async {
     // 验证表单
@@ -408,31 +378,21 @@ class _SourceEditScreenState extends State<SourceEditScreen>
         normalizedUrl = 'https://$normalizedUrl';
       }
 
+      final ruleSearchJson = _parseRuleJson(_ruleSearchController.text);
+      final ruleTocJson = _parseRuleJson(_ruleChapterController.text);
+      final ruleContentJson = _parseRuleJson(_ruleContentController.text);
+
       final bookSource = BookSource(
-        id: widget.source?.id ?? BookSource.generateId(),
-        name: _nameController.text.trim(),
-        baseUrl: normalizedUrl,
+        bookSourceUrl: normalizedUrl,
+        bookSourceName: _nameController.text.trim(),
         enabled: _enabled,
-        iconUrl: _iconUrlController.text.trim().isEmpty
-            ? null
-            : _iconUrlController.text.trim(),
-        author: _authorController.text.trim().isEmpty
-            ? null
-            : _authorController.text.trim(),
-        version: _versionController.text.trim().isEmpty
-            ? null
-            : _versionController.text.trim(),
-        ruleSearch: _ruleSearchController.text.trim().isEmpty
-            ? '{}'
-            : _ruleSearchController.text.trim(),
-        ruleChapter: _ruleChapterController.text.trim().isEmpty
-            ? '{}'
-            : _ruleChapterController.text.trim(),
-        ruleContent: _ruleContentController.text.trim().isEmpty
-            ? '{}'
-            : _ruleContentController.text.trim(),
-        createTime: widget.source?.createTime,
-        updateTime: DateTime.now().millisecondsSinceEpoch,
+        ruleSearch:
+            ruleSearchJson != null ? SearchRule.fromJson(ruleSearchJson) : null,
+        ruleToc: ruleTocJson != null ? TocRule.fromJson(ruleTocJson) : null,
+        ruleContent: ruleContentJson != null
+            ? ContentRule.fromJson(ruleContentJson)
+            : null,
+        lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
       );
 
       bool success;
@@ -492,35 +452,28 @@ class _SourceEditScreenState extends State<SourceEditScreen>
     }
 
     // 创建当前书源对象（包含最新的编辑内容）
+    final currentRuleSearchJson = _parseRuleJson(_ruleSearchController.text);
+    final currentRuleTocJson = _parseRuleJson(_ruleChapterController.text);
+    final currentRuleContentJson = _parseRuleJson(_ruleContentController.text);
+
     final currentSource = BookSource(
-      id: widget.source!.id,
-      name: _nameController.text.trim().isEmpty
-          ? widget.source!.name
-          : _nameController.text.trim(),
-      baseUrl: _baseUrlController.text.trim().isEmpty
-          ? widget.source!.baseUrl
+      bookSourceUrl: _baseUrlController.text.trim().isEmpty
+          ? widget.source!.bookSourceUrl
           : _baseUrlController.text.trim(),
+      bookSourceName: _nameController.text.trim().isEmpty
+          ? widget.source!.bookSourceName
+          : _nameController.text.trim(),
       enabled: _enabled,
-      ruleSearch: _ruleSearchController.text.trim().isEmpty
-          ? '{}'
-          : _ruleSearchController.text.trim(),
-      ruleChapter: _ruleChapterController.text.trim().isEmpty
-          ? '{}'
-          : _ruleChapterController.text.trim(),
-      ruleContent: _ruleContentController.text.trim().isEmpty
-          ? '{}'
-          : _ruleContentController.text.trim(),
-      iconUrl: _iconUrlController.text.trim().isEmpty
-          ? null
-          : _iconUrlController.text.trim(),
-      author: _authorController.text.trim().isEmpty
-          ? null
-          : _authorController.text.trim(),
-      version: _versionController.text.trim().isEmpty
-          ? null
-          : _versionController.text.trim(),
-      createTime: widget.source!.createTime,
-      updateTime: widget.source!.updateTime,
+      ruleSearch: currentRuleSearchJson != null
+          ? SearchRule.fromJson(currentRuleSearchJson)
+          : widget.source!.ruleSearch,
+      ruleToc: currentRuleTocJson != null
+          ? TocRule.fromJson(currentRuleTocJson)
+          : widget.source!.ruleToc,
+      ruleContent: currentRuleContentJson != null
+          ? ContentRule.fromJson(currentRuleContentJson)
+          : widget.source!.ruleContent,
+      lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
     );
 
     await Navigator.of(context).push(

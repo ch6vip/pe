@@ -33,8 +33,8 @@ class SourceDebugService {
 
     _isDebugging = true;
     try {
-      _log('🚀 开始调试书源：${source.name}');
-      _log('📝 书源地址：${source.baseUrl}');
+      _log('🚀 开始调试书源：${source.bookSourceName}');
+      _log('📝 书源地址：${source.bookSourceUrl}');
       _log('');
 
       // Step 1: 搜索测试
@@ -69,7 +69,7 @@ class SourceDebugService {
 
       // 构建搜索URL
       final searchUrl = _buildSearchUrl(
-        source.baseUrl,
+        source.bookSourceUrl,
         searchRule['searchUrl'] ?? '',
         keyword,
       );
@@ -122,7 +122,7 @@ class SourceDebugService {
         return;
       }
 
-      final fullUrl = _buildFullUrl(source.baseUrl, detailUrl);
+      final fullUrl = _buildFullUrl(source.bookSourceUrl, detailUrl);
       _log('🌐 详情页URL：$fullUrl');
 
       // 发起详情页请求
@@ -163,7 +163,7 @@ class SourceDebugService {
     _log('📋 Step 3: 目录规则测试');
 
     try {
-      final fullUrl = _buildFullUrl(source.baseUrl, chapterUrl);
+      final fullUrl = _buildFullUrl(source.bookSourceUrl, chapterUrl);
       _log('🌐 目录页URL：$fullUrl');
 
       // 发起目录页请求
@@ -175,7 +175,7 @@ class SourceDebugService {
         // 解析章节列表
         final chapters = await _parseChapterList(
           response.body,
-          source.ruleChapter,
+          _encodeRuleJson(source.ruleToc?.toJson()),
         );
         _log('✅ 目录解析成功，共 ${chapters.length} 个章节');
 
@@ -206,7 +206,7 @@ class SourceDebugService {
     _log('📋 Step 4: 正文规则测试');
 
     try {
-      final fullUrl = _buildFullUrl(source.baseUrl, contentUrl);
+      final fullUrl = _buildFullUrl(source.bookSourceUrl, contentUrl);
       _log('🌐 正文页URL：$fullUrl');
 
       // 发起正文页请求
@@ -216,7 +216,10 @@ class SourceDebugService {
 
       if (response.statusCode == 200) {
         // 解析正文内容
-        final content = await _parseContent(response.body, source.ruleContent);
+        final content = await _parseContent(
+          response.body,
+          _encodeRuleJson(source.ruleContent?.toJson()),
+        );
         _log('✅ 正文解析成功');
         _log(
           '📄 正文内容前100字：${content.substring(0, content.length > 100 ? 100 : content.length)}...',
@@ -240,7 +243,7 @@ class SourceDebugService {
     try {
       final searchRule = _parseSearchRule(source.ruleSearch);
       final searchUrl = _buildSearchUrl(
-        source.baseUrl,
+        source.bookSourceUrl,
         searchRule['searchUrl'] ?? '',
         keyword,
       );
@@ -256,9 +259,13 @@ class SourceDebugService {
   }
 
   /// 解析搜索规则
-  Map<String, dynamic> _parseSearchRule(String ruleJson) {
+  Map<String, dynamic> _parseSearchRule(SearchRule? rule) {
     try {
-      return json.decode(ruleJson) as Map<String, dynamic>;
+      final jsonString = _encodeRuleJson(rule?.toJson());
+      if (jsonString.isEmpty) {
+        throw const FormatException('empty rule');
+      }
+      return json.decode(jsonString) as Map<String, dynamic>;
     } catch (e) {
       _log('⚠️ 搜索规则解析失败，使用默认规则：$e');
       return {
@@ -275,6 +282,13 @@ class SourceDebugService {
   String _buildSearchUrl(String baseUrl, String searchUrl, String keyword) {
     final url = searchUrl.replaceAll('{key}', Uri.encodeComponent(keyword));
     return _buildFullUrl(baseUrl, url);
+  }
+
+  String _encodeRuleJson(Map<String, dynamic>? json) {
+    if (json == null || json.isEmpty) {
+      return '';
+    }
+    return jsonEncode(json);
   }
 
   /// 构建完整URL
@@ -304,9 +318,7 @@ class SourceDebugService {
       'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
     };
 
-    return await http
-        .get(Uri.parse(url), headers: headers)
-        .timeout(
+    return await http.get(Uri.parse(url), headers: headers).timeout(
           const Duration(seconds: 30),
           onTimeout: () => throw TimeoutException('请求超时'),
         );
