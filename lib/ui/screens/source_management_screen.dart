@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/source_manager_service.dart';
 import '../../models/book_source.dart';
+import 'source_edit_screen.dart';
 
 /// 书源管理页面
 ///
@@ -18,23 +19,6 @@ class SourceManagementScreen extends StatefulWidget {
 }
 
 class _SourceManagementScreenState extends State<SourceManagementScreen> {
-  late final TextEditingController _nameController;
-  late final TextEditingController _urlController;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController();
-    _urlController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _urlController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,7 +30,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: '添加书源',
-            onPressed: () => _showAddSourceDialog(context),
+            onPressed: () => _navigateToEditScreen(context),
           ),
         ],
       ),
@@ -289,232 +273,42 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
                 ),
             ],
           ),
-          // 启用/禁用开关
-          trailing: Switch(
-            value: source.enabled,
-            onChanged: (value) {
-              sourceService.toggleSourceEnabled(source.id);
-            },
+          // 操作按钮区域
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 编辑按钮
+              IconButton(
+                icon: const Icon(Icons.edit, size: 20),
+                tooltip: '编辑书源',
+                onPressed: () {
+                  _navigateToEditScreen(context, source: source);
+                },
+              ),
+              // 启用/禁用开关
+              Switch(
+                value: source.enabled,
+                onChanged: (value) {
+                  sourceService.toggleSourceEnabled(source.id);
+                },
+              ),
+            ],
           ),
-          // 点击查看详情
+          // 点击编辑书源
           onTap: () {
-            _showSourceDetailDialog(source, sourceService);
+            _navigateToEditScreen(context, source: source);
           },
         ),
       ),
     );
   }
 
-  /// 显示添加书源对话框
-  void _showAddSourceDialog(BuildContext context) {
-    _nameController.clear();
-    _urlController.clear();
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('添加书源'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '请输入书源信息：',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: '书源名称',
-                hintText: '例如：起点中文网',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.book),
-              ),
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _urlController,
-              decoration: const InputDecoration(
-                labelText: '书源地址',
-                hintText: '例如：www.qidian.com',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.link),
-              ),
-              keyboardType: TextInputType.url,
-              textInputAction: TextInputAction.done,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '提示：地址会自动添加 https:// 前缀',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = _nameController.text.trim();
-              final url = _urlController.text.trim();
-
-              if (name.isEmpty || url.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('请填写完整信息')),
-                );
-                return;
-              }
-
-              final sourceService = context.read<SourceManagerService>();
-              final success = await sourceService.addSimpleSource(name, url);
-
-              if (success) {
-                Navigator.pop(dialogContext);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('书源添加成功')),
-                  );
-                }
-              } else {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(sourceService.errorMessage ?? '添加失败'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('添加'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 显示书源详情对话框
-  void _showSourceDetailDialog(
-    BookSource source,
-    SourceManagerService sourceService,
-  ) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(source.name),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDetailRow('书源 ID', source.id),
-              _buildDetailRow('书源地址', source.baseUrl),
-              _buildDetailRow('状态', source.enabled ? '已启用' : '已禁用'),
-              if (source.author != null) _buildDetailRow('作者', source.author!),
-              if (source.version != null)
-                _buildDetailRow('版本', source.version!),
-              const SizedBox(height: 16),
-              const Text(
-                '搜索规则：',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  source.ruleSearch,
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '目录规则：',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  source.ruleChapter,
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '正文规则：',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  source.ruleContent,
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('关闭'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              _confirmDeleteSource(source, sourceService);
-            },
-            child: const Text(
-              '删除',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 构建详情行
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label：',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(color: Colors.grey[700]),
-            ),
-          ),
-        ],
+  /// 导航到书源编辑页面
+  void _navigateToEditScreen(BuildContext context, {BookSource? source}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SourceEditScreen(source: source),
       ),
     );
   }

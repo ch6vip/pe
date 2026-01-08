@@ -164,9 +164,83 @@ java -version
 4. **限制对密钥库文件的访问权限**
 5. **考虑使用密钥管理服务**（如 Google Cloud KMS）
 
+## 验证 GitHub Actions 构建的 APK 签名
+
+### 方法 1: 使用 apksigner 验证
+
+```bash
+# 下载 GitHub Actions 构建的 APK
+# 从 GitHub Actions artifact 或 Release 中下载 APK 文件
+
+# 使用 Android SDK 的 apksigner 验证
+apksigner verify --verbose app-release.apk
+
+# 查看签名信息
+apksigner verify --print-certs app-release.apk
+```
+
+### 方法 2: 使用 keytool 验证
+
+```bash
+# 查看 APK 的签名证书信息
+keytool -printcert -jarfile app-release.apk
+
+# 对比本地密钥库的签名信息
+keytool -list -v -keystore android/app/ch6vip-keystore.jks -alias ch6vip
+```
+
+### 方法 3: 使用 jarsigner 验证
+
+```bash
+# 验证 APK 签名
+jarsigner -verify -verbose -certs app-release.apk
+
+# 查看详细签名信息
+jarsigner -verify -verbose -certs -keystore android/app/ch6vip-keystore.jks app-release.apk ch6vip
+```
+
+### 方法 4: 在 GitHub Actions 中自动验证
+
+可以在 GitHub Actions 工作流中添加验证步骤：
+
+```yaml
+- name: Verify APK Signature
+  run: |
+    # 使用 apksigner 验证签名
+    $ANDROID_HOME/build-tools/34.0.0/apksigner verify --verbose build/app/outputs/flutter-apk/app-release.apk
+    
+    # 输出签名信息
+    keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk
+```
+
+### 验证要点
+
+1. **签名一致性**: GitHub Actions 构建的 APK 应该与本地构建的 APK 使用相同的签名
+2. **证书信息**: 验证颁发者、有效期、指纹等信息是否正确
+3. **签名算法**: 确认使用的是 SHA256withRSA 算法
+4. **密钥信息**: 确认使用正确的密钥别名 (ch6vip)
+
+### 预期的签名信息
+
+- **别名**: `ch6vip`
+- **算法**: SHA256withRSA
+- **有效期**: 2026-01-09 到 2053-05-27
+- **SHA-1**: `33:BD:2F:6A:44:17:B2:C1:92:A2:1B:7A:7E:7D:AC:BD:AA:53:D3:5A`
+- **SHA-256**: `EB:AB:9B:45:02:33:3F:83:6D:6D:1E:14:ED:0E:6F:E9:29:93:CD:48:9C:86:FD:DB:BA:04:08:31:50:C1:25:B5`
+
+### 故障排除
+
+如果签名验证失败：
+
+1. **检查密钥库文件**: 确认 GitHub Secrets 中的 Base64 编码正确
+2. **检查密码**: 确认所有密码和别名设置正确
+3. **检查文件路径**: 确认密钥库文件路径在构建时正确
+4. **重新生成**: 如果无法解决，可能需要重新生成密钥库文件
+
 ## 参考链接
 
 - [Flutter Android 发布指南](https://flutter.dev/docs/deployment/android)
 - [Android 应用签名](https://developer.android.com/studio/publish/app-signing)
 - [Google Play 应用签名](https://support.google.com/googleplay/android-developer/answer/7384423)
 - [GitHub Secrets 使用指南](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions)
+- [APK 签名验证工具](https://developer.android.com/studio/publish/app-signing#verify)
