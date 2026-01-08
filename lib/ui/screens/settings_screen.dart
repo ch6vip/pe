@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/reader_settings_service.dart';
-import 'reading_log_screen.dart';
+import 'app_log_screen.dart';
 
 /// 设置页面
 ///
@@ -151,16 +151,16 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       title: '通用设置',
       children: [
-        // 阅读日志
+        // 应用日志
         ListTile(
-          leading: const Icon(Icons.history_edu),
-          title: const Text('阅读日志'),
-          subtitle: const Text('查看阅读足迹与统计'),
+          leading: const Icon(Icons.article_outlined),
+          title: const Text('应用日志'),
+          subtitle: const Text('查看运行日志和错误信息'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ReadingLogScreen()),
+              MaterialPageRoute(builder: (context) => const AppLogScreen()),
             );
           },
         ),
