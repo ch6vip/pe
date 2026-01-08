@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:reader_flutter/ui/main_scaffold.dart';
 import 'package:reader_flutter/services/reader_settings_service.dart';
 import 'package:reader_flutter/services/app_log_service.dart';
+import 'package:reader_flutter/services/source_manager_service.dart';
 
 /// 应用入口函数
 void main() async {
@@ -18,6 +19,10 @@ void main() async {
   // 初始化阅读器设置服务（加载持久化数据）
   final readerSettingsService = ReaderSettingsService();
   await readerSettingsService.loadSettings();
+
+  // 初始化书源管理服务（加载本地书源数据）
+  final sourceManagerService = SourceManagerService();
+  await sourceManagerService.initialize();
 
   logService.info('应用初始化完成', tag: 'Main');
 
@@ -35,6 +40,10 @@ void main() async {
         // 全局注入 ReaderSettingsService
         ChangeNotifierProvider.value(
           value: readerSettingsService,
+        ),
+        // 全局注入 SourceManagerService
+        ChangeNotifierProvider.value(
+          value: sourceManagerService,
         ),
       ],
       child: const PeReaderApp(),

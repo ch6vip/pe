@@ -5,6 +5,22 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+
+// 优先使用环境变量（GitHub Actions），然后使用key.properties文件
+if (System.getenv("SIGNING_KEY_ALIAS") != null) {
+    keystoreProperties["keyAlias"] = System.getenv("SIGNING_KEY_ALIAS")
+    keystoreProperties["keyPassword"] = System.getenv("SIGNING_KEY_PASSWORD")
+    keystoreProperties["storePassword"] = System.getenv("SIGNING_STORE_PASSWORD")
+    keystoreProperties["storeFile"] = System.getenv("SIGNING_STORE_FILE") ?: "../app/ch6vip-keystore.jks"
+} else if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.pereader.app"
     compileSdk = flutter.compileSdkVersion
@@ -30,11 +46,18 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = file(keystoreProperties["storeFile"] as String)
+            storePassword = keystoreProperties["storePassword"] as String
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

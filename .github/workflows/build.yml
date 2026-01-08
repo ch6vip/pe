@@ -40,6 +40,18 @@ jobs:
     
     - run: flutter pub get
     
+    # 设置签名配置
+    - name: Setup Signing Configuration
+      run: |
+        # 创建key.properties文件
+        echo "storePassword=${{ secrets.SIGNING_STORE_PASSWORD }}" > android/key.properties
+        echo "keyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}" >> android/key.properties
+        echo "keyAlias=${{ secrets.SIGNING_KEY_ALIAS }}" >> android/key.properties
+        echo "storeFile=../app/ch6vip-keystore.jks" >> android/key.properties
+        
+        # 解码并创建keystore文件
+        echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 -d > android/app/ch6vip-keystore.jks
+    
     - name: Verify package name
       run: |
         echo "=== Checking applicationId in build.gradle.kts ==="
@@ -51,6 +63,10 @@ jobs:
       run: flutter build apk --release
       env:
         GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        SIGNING_STORE_FILE: ../app/ch6vip-keystore.jks
     
     # 保留 artifact 用于普通 push 时查看
     - name: Upload APK as Artifact

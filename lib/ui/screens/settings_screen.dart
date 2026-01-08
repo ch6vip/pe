@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/reader_settings_service.dart';
+import '../../services/source_manager_service.dart';
 import 'app_log_screen.dart';
+import 'source_management_screen.dart';
 
 /// 设置页面
 ///
@@ -151,6 +153,21 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       title: '通用设置',
       children: [
+        // 书源管理
+        ListTile(
+          leading: const Icon(Icons.library_books_outlined),
+          title: const Text('书源管理'),
+          subtitle: const Text('管理小说书源，添加、删除或编辑书源规则'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SourceManagementScreen(),
+              ),
+            );
+          },
+        ),
         // 应用日志
         ListTile(
           leading: const Icon(Icons.article_outlined),
