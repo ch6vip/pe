@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:reader_flutter/services/app_log_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 翻页动画类型枚举
@@ -34,6 +35,8 @@ enum ReaderTheme {
 /// 使用 ChangeNotifier 实现状态管理，通过 SharedPreferences 持久化存储
 /// 管理阅读器的核心设置：字体大小、行高、翻页动画、背景主题等
 class ReaderSettingsService extends ChangeNotifier {
+  final AppLogService _logService = AppLogService();
+
   // ==================== 私有属性 ====================
 
   /// 字体大小（默认 18.0）
@@ -151,13 +154,9 @@ class ReaderSettingsService extends ChangeNotifier {
       // 保存主题（使用枚举的索引）
       await prefs.setInt(_keyTheme, _theme.index);
 
-      if (kDebugMode) {
-        debugPrint('ReaderSettingsService: 设置已保存');
-      }
+      _logService.info('阅读设置已保存', tag: 'ReaderSettingsService');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('ReaderSettingsService: 保存设置失败 - $e');
-      }
+      _logService.warning('保存阅读设置失败: $e', tag: 'ReaderSettingsService');
     }
   }
 
@@ -197,17 +196,13 @@ class ReaderSettingsService extends ChangeNotifier {
       // 通知监听器设置已更新
       notifyListeners();
 
-      if (kDebugMode) {
-        debugPrint('ReaderSettingsService: 设置已加载');
-        debugPrint('  字体大小: $_fontSize');
-        debugPrint('  行高: $_lineHeight');
-        debugPrint('  翻页动画: $_pageAnimation');
-        debugPrint('  主题: $_theme');
-      }
+      _logService.info('阅读设置已加载', tag: 'ReaderSettingsService');
+      _logService.debug('字体大小: $_fontSize', tag: 'ReaderSettingsService');
+      _logService.debug('行高: $_lineHeight', tag: 'ReaderSettingsService');
+      _logService.debug('翻页动画: $_pageAnimation', tag: 'ReaderSettingsService');
+      _logService.debug('主题: $_theme', tag: 'ReaderSettingsService');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('ReaderSettingsService: 加载设置失败，使用默认值 - $e');
-      }
+      _logService.warning('加载阅读设置失败，使用默认值: $e', tag: 'ReaderSettingsService');
       // 加载失败时使用默认值
       _fontSize = 18.0;
       _lineHeight = 1.8;
@@ -227,9 +222,7 @@ class ReaderSettingsService extends ChangeNotifier {
     notifyListeners();
     await _saveSettings();
 
-    if (kDebugMode) {
-      debugPrint('ReaderSettingsService: 设置已重置为默认值');
-    }
+    _logService.info('阅读设置已重置为默认值', tag: 'ReaderSettingsService');
   }
 }
 

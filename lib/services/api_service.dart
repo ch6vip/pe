@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:reader_flutter/models/book.dart';
 import 'package:reader_flutter/models/chapter.dart';
 import 'package:reader_flutter/models/chapter_content.dart';
+import 'package:reader_flutter/services/app_log_service.dart';
 
 /// API 请求异常
 ///
@@ -63,6 +65,8 @@ class ApiService {
   /// 创建 ApiService 实例
   ///
   /// [client] - 可选的 HTTP 客户端，用于依赖注入和测试
+  final AppLogService _logService = AppLogService();
+
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
   // ==================== 公共方法 ====================
@@ -81,6 +85,7 @@ class ApiService {
   /// - [ApiException] 当所有请求都失败时
   Future<Map<String, List<Book>>> fetchHomePageData() async {
     try {
+      _logService.info('开始获取首页数据', tag: 'ApiService');
       // 并行请求所有数据源
       final results = await Future.wait([
         _safeGet(_fastUpdateApi),
@@ -98,7 +103,10 @@ class ApiService {
         'topList': topList,
         'publishedList': publishedList,
       };
-    } catch (e) {
+      _logService.info('首页数据获取成功', tag: 'ApiService');
+    } catch (e, stackTrace) {
+      _logService.error('获取首页数据失败',
+          error: e, stackTrace: stackTrace, tag: 'ApiService');
       throw ApiException('获取首页数据失败', originalError: e);
     }
   }
@@ -114,9 +122,11 @@ class ApiService {
   /// - [ApiException] 当搜索请求失败时
   Future<List<Book>> searchBooks(String query, {int page = 1}) async {
     if (query.trim().isEmpty) {
+      _logService.debug('搜索关键词为空，返回空结果', tag: 'ApiService');
       return [];
     }
 
+    _logService.info('搜索书籍：$query (第${page}页)', tag: 'ApiService');
     final params = {
       'query': query.trim(),
       'offset': (page > 0 ? page - 1 : 0).toString(),
@@ -126,8 +136,12 @@ class ApiService {
 
     try {
       final response = await _getWithTimeout(uri);
-      return _extractSearchBooks(response);
-    } catch (e) {
+      final books = _extractSearchBooks(response);
+      _logService.info('搜索完成，找到${books.length}本书', tag: 'ApiService');
+      return books;
+    } catch (e, stackTrace) {
+      _logService.error('搜索书籍失败：$query',
+          error: e, stackTrace: stackTrace, tag: 'ApiService');
       if (e is ApiException) rethrow;
       throw ApiException('搜索书籍失败', originalError: e);
     }
@@ -143,9 +157,11 @@ class ApiService {
   /// - [ApiException] 当请求失败或数据格式错误时
   Future<List<Chapter>> getChapterList(String bookId) async {
     if (bookId.isEmpty) {
+      _logService.error('书籍ID为空', tag: 'ApiService');
       throw const ApiException('书籍 ID 不能为空');
     }
 
+    _logService.info('获取章节列表：$bookId', tag: 'ApiService');
     final uri = Uri.parse(
       _chapterListApiPath,
     ).replace(queryParameters: {'book_id': bookId});
@@ -154,6 +170,8 @@ class ApiService {
       final response = await _getWithTimeout(uri);
 
       if (response.statusCode != 200) {
+        _logService.error('获取章节列表失败，状态码：${response.statusCode}',
+            tag: 'ApiService');
         throw ApiException('获取章节列表失败', statusCode: response.statusCode);
       }
 
@@ -182,14 +200,18 @@ class ApiService {
 
       if (itemList == null) {
         // 打印调试信息以便排查
-        print('章节列表解析失败，响应数据: $body');
+        _logService.error('章节列表解析失败，响应数据: $body', tag: 'ApiService');
         throw const ApiException('章节列表数据格式错误');
       }
 
-      return itemList
+      final chapters = itemList
           .map((item) => Chapter.fromJson(item as Map<String, dynamic>))
           .toList();
-    } catch (e) {
+      _logService.info('获取章节列表成功，共${chapters.length}章', tag: 'ApiService');
+      return chapters;
+    } catch (e, stackTrace) {
+      _logService.error('获取章节列表失败：$bookId',
+          error: e, stackTrace: stackTrace, tag: 'ApiService');
       if (e is ApiException) rethrow;
       throw ApiException('获取章节列表失败', originalError: e);
     }
@@ -205,9 +227,11 @@ class ApiService {
   /// - [ApiException] 当请求失败或数据格式错误时
   Future<ChapterContent> getChapterContent(String itemId) async {
     if (itemId.isEmpty) {
+      _logService.error('章节ID为空', tag: 'ApiService');
       throw const ApiException('章节 ID 不能为空');
     }
 
+    _logService.info('获取章节内容：$itemId', tag: 'ApiService');
     final uri = Uri.parse(
       _chapterContentApiPath,
     ).replace(queryParameters: {'item_id': itemId});
@@ -216,14 +240,22 @@ class ApiService {
       final response = await _getWithTimeout(uri);
 
       if (response.statusCode != 200) {
+        _logService.error('获取章节内容失败，状态码：${response.statusCode}',
+            tag: 'ApiService');
         throw ApiException('获取章节内容失败', statusCode: response.statusCode);
       }
 
       final body = _decodeResponse(response);
-      return ChapterContent.fromJson(body);
+      final content = ChapterContent.fromJson(body);
+      _logService.info('获取章节内容成功：$itemId', tag: 'ApiService');
+      return content;
     } on FormatException catch (e) {
+      _logService.error('章节内容解析失败：$itemId - ${e.message}',
+          error: e, tag: 'ApiService');
       throw ApiException('章节内容解析失败: ${e.message}', originalError: e);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logService.error('获取章节内容失败：$itemId',
+          error: e, stackTrace: stackTrace, tag: 'ApiService');
       if (e is ApiException) rethrow;
       throw ApiException('获取章节内容失败', originalError: e);
     }
@@ -237,6 +269,7 @@ class ApiService {
       return await _getWithTimeout(Uri.parse(url));
     } catch (e) {
       // 记录错误但不中断其他请求
+      _logService.warning('请求失败（忽略）：$url - $e', tag: 'ApiService');
       return null;
     }
   }
@@ -273,6 +306,7 @@ class ApiService {
       } catch (e) {
         attempts++;
         if (attempts > retries) {
+          _logService.error('网络请求失败（重试超时）：$uri', error: e, tag: 'ApiService');
           throw ApiException('网络请求失败: $uri', originalError: e);
         }
         // 简单的指数退避
@@ -287,6 +321,8 @@ class ApiService {
       return json.decode(utf8.decode(response.bodyBytes))
           as Map<String, dynamic>;
     } catch (e) {
+      _logService.error('响应解析失败', error: e, tag: 'ApiService');
+      _logService.error('响应解析失败', error: e, tag: 'ApiService');
       throw ApiException('响应解析失败', originalError: e);
     }
   }
@@ -319,6 +355,7 @@ class ApiService {
 
       return [];
     } catch (e) {
+      _logService.warning('书籍列表解析失败 - $e', tag: 'ApiService');
       return [];
     }
   }
@@ -393,6 +430,7 @@ class ApiService {
 
       return [];
     } catch (e) {
+      _logService.warning('搜索结果解析失败 - $e', tag: 'ApiService');
       return [];
     }
   }

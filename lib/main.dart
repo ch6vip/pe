@@ -3,15 +3,23 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:reader_flutter/ui/main_scaffold.dart';
 import 'package:reader_flutter/services/reader_settings_service.dart';
+import 'package:reader_flutter/services/app_log_service.dart';
 
 /// 应用入口函数
 void main() async {
   // 确保 Flutter 绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 初始化日志服务
+  final logService = AppLogService();
+  logService.info('=== PE 阅读器启动 ===', tag: 'Main');
+  logService.info('应用初始化开始', tag: 'Main');
+
   // 初始化阅读器设置服务（加载持久化数据）
   final readerSettingsService = ReaderSettingsService();
   await readerSettingsService.loadSettings();
+
+  logService.info('应用初始化完成', tag: 'Main');
 
   // 设置系统 UI 样式
   SystemChrome.setSystemUIOverlayStyle(
@@ -40,6 +48,9 @@ class PeReaderApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final logService = AppLogService();
+    logService.info('构建应用根组件', tag: 'Main');
+
     return MaterialApp(
       title: 'PE 阅读器',
       debugShowCheckedModeBanner: false,

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:reader_flutter/models/book.dart';
 import 'package:reader_flutter/models/chapter_content.dart';
+import 'package:reader_flutter/services/app_log_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 存储异常
@@ -46,6 +47,8 @@ enum SortOrder {
 ///
 /// 负责管理书架数据和用户偏好设置的本地持久化存储
 class StorageService {
+  final AppLogService _logService = AppLogService();
+
   // ==================== 存储键常量 ====================
 
   /// 书架数据存储键
@@ -76,27 +79,34 @@ class StorageService {
   /// - [StorageException] 当读取或解析数据失败时
   Future<List<Book>> getBookshelf() async {
     try {
+      _logService.debug('开始读取书架数据', tag: 'StorageService');
       final prefs = await _prefs;
       final List<String>? bookshelfJson = prefs.getStringList(_bookshelfKey);
 
       if (bookshelfJson == null || bookshelfJson.isEmpty) {
+        _logService.debug('书架为空', tag: 'StorageService');
         return [];
       }
 
-      return bookshelfJson
+      final books = bookshelfJson
           .map((bookJson) {
             try {
               return Book.fromJson(
                 json.decode(bookJson) as Map<String, dynamic>,
               );
             } catch (e) {
-              // 跳过解析失败的书籍，保持健壮性
+              _logService.warning('解析书籍数据失败: $e', tag: 'StorageService');
               return null;
             }
           })
           .whereType<Book>()
           .toList();
-    } catch (e) {
+
+      _logService.info('成功读取书架数据，共${books.length}本书', tag: 'StorageService');
+      return books;
+    } catch (e, stackTrace) {
+      _logService.error('读取书架数据失败',
+          error: e, stackTrace: stackTrace, tag: 'StorageService');
       throw StorageException('读取书架数据失败', originalError: e);
     }
   }
@@ -109,12 +119,15 @@ class StorageService {
   /// - [StorageException] 当保存数据失败时
   Future<void> saveBookshelf(List<Book> books) async {
     try {
+      _logService.debug('开始保存书架数据，共${books.length}本书', tag: 'StorageService');
       final prefs = await _prefs;
-      final List<String> bookshelfJson = books
-          .map((book) => json.encode(book.toJson()))
-          .toList();
+      final List<String> bookshelfJson =
+          books.map((book) => json.encode(book.toJson())).toList();
       await prefs.setStringList(_bookshelfKey, bookshelfJson);
-    } catch (e) {
+      _logService.debug('书架数据保存成功', tag: 'StorageService');
+    } catch (e, stackTrace) {
+      _logService.error('保存书架数据失败',
+          error: e, stackTrace: stackTrace, tag: 'StorageService');
       throw StorageException('保存书架数据失败', originalError: e);
     }
   }
@@ -131,10 +144,12 @@ class StorageService {
   /// - [StorageException] 当存储操作失败时
   Future<bool> addBookToShelf(Book book) async {
     try {
+      _logService.info('添加书籍到书架：${book.name}', tag: 'StorageService');
       final List<Book> bookshelf = await getBookshelf();
 
       // 检查是否已存在
       if (bookshelf.any((b) => b.id == book.id)) {
+        _logService.debug('书籍已存在于书架中：${book.name}', tag: 'StorageService');
         return false;
       }
 
@@ -145,8 +160,11 @@ class StorageService {
 
       bookshelf.add(bookToAdd);
       await saveBookshelf(bookshelf);
+      _logService.info('成功添加书籍到书架：${book.name}', tag: 'StorageService');
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logService.error('添加书籍失败：${book.name}',
+          error: e, stackTrace: stackTrace, tag: 'StorageService');
       if (e is StorageException) rethrow;
       throw StorageException('添加书籍失败', originalError: e);
     }
@@ -166,18 +184,23 @@ class StorageService {
     }
 
     try {
+      _logService.info('从书架移除书籍：$bookId', tag: 'StorageService');
       final List<Book> bookshelf = await getBookshelf();
       final originalLength = bookshelf.length;
 
       bookshelf.removeWhere((book) => book.id == bookId);
 
       if (bookshelf.length == originalLength) {
+        _logService.warning('尝试移除不存在的书籍：$bookId', tag: 'StorageService');
         return false; // 书籍不存在
       }
 
       await saveBookshelf(bookshelf);
+      _logService.info('成功移除书籍：$bookId', tag: 'StorageService');
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logService.error('移除书籍失败：$bookId',
+          error: e, stackTrace: stackTrace, tag: 'StorageService');
       if (e is StorageException) rethrow;
       throw StorageException('移除书籍失败', originalError: e);
     }
@@ -369,8 +392,8 @@ class StorageService {
         json.encode(content.toJson()),
       );
     } catch (e) {
-      // 缓存失败不抛出异常，仅记录日志（实际项目中应使用日志库）
-      debugPrint('缓存章节内容失败: $e');
+      // 缓存失败不抛出异常，仅记录日志
+      _logService.warning('缓存章节内容失败: $chapterId - $e', tag: 'StorageService');
     }
   }
 
