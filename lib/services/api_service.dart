@@ -180,8 +180,9 @@ class ApiService {
       List<dynamic>? itemList;
 
       if (data is Map<String, dynamic>) {
-        itemList = (data['item_list'] ??
-            data['item_data_list'] ??
+        // 优先使用 item_data_list，因为日志显示这是实际使用的字段名
+        itemList = (data['item_data_list'] ??
+            data['item_list'] ??
             data['chapter_list'] ??
             data['chapters'] ??
             data['list']) as List<dynamic>?;
@@ -190,8 +191,8 @@ class ApiService {
       }
 
       // 如果 data 为空，尝试直接从 body 获取
-      itemList ??= (body['item_list'] ??
-          body['item_data_list'] ??
+      itemList ??= (body['item_data_list'] ??
+          body['item_list'] ??
           body['chapter_list'] ??
           body['chapters'] ??
           body['list']) as List<dynamic>?;

@@ -68,7 +68,9 @@ class Chapter {
 
       // 安全转换字数，支持 String/Int 类型
       int? wordNumber;
-      final wordNumberValue = json['chapter_word_number'] ?? json['word_count'];
+      final wordNumberValue = json['chapter_word_number'] ??
+          json['word_number'] ??
+          json['word_count'];
       if (wordNumberValue != null) {
         if (wordNumberValue is int) {
           wordNumber = wordNumberValue;
