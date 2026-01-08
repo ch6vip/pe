@@ -31,12 +31,20 @@ class Chapter {
   /// }
   /// ```
   factory Chapter.fromJson(Map<String, dynamic> json) {
-    final dynamic rawItemId = json['item_id'];
+    // 支持多种 ID 字段名
+    final dynamic rawItemId =
+        json['item_id'] ?? json['id'] ?? json['chapter_id'];
+
+    // 支持多种标题字段名
+    final String? title = json['title'] as String? ??
+        json['chapter_name'] as String? ??
+        json['name'] as String?;
+
     return Chapter(
       itemId: rawItemId?.toString() ?? '',
-      title: (json['title'] as String?) ?? '未知章节',
+      title: title ?? '未知章节',
       volumeName: json['volume_name'] as String?,
-      wordNumber: json['chapter_word_number'] as int?,
+      wordNumber: (json['chapter_word_number'] ?? json['word_count']) as int?,
     );
   }
 

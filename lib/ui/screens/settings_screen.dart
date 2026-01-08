@@ -150,6 +150,18 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       title: '通用设置',
       children: [
+        // 阅读日志
+        ListTile(
+          leading: const Icon(Icons.history_edu),
+          title: const Text('阅读日志'),
+          subtitle: const Text('查看阅读足迹与统计'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            debugPrint('点击了阅读日志');
+            // TODO: 跳转到阅读日志页面
+          },
+        ),
+
         // 缓存管理
         ListTile(
           leading: const Icon(Icons.cleaning_services_outlined),

@@ -158,13 +158,34 @@ class ApiService {
       }
 
       final body = _decodeResponse(response);
-      final data = body['data'];
+      dynamic data = body['data'];
 
-      if (data == null || data['item_list'] is! List) {
+      // 尝试从不同的字段中获取章节列表
+      List<dynamic>? itemList;
+
+      if (data is Map<String, dynamic>) {
+        itemList = (data['item_list'] ??
+            data['chapter_list'] ??
+            data['chapters'] ??
+            data['list']) as List<dynamic>?;
+      } else if (data is List) {
+        itemList = data;
+      }
+
+      // 如果 data 为空，尝试直接从 body 获取
+      if (itemList == null) {
+        itemList = (body['item_list'] ??
+            body['chapter_list'] ??
+            body['chapters'] ??
+            body['list']) as List<dynamic>?;
+      }
+
+      if (itemList == null) {
+        // 打印调试信息以便排查
+        print('章节列表解析失败，响应数据: $body');
         throw const ApiException('章节列表数据格式错误');
       }
 
-      final List<dynamic> itemList = data['item_list'] as List<dynamic>;
       return itemList
           .map((item) => Chapter.fromJson(item as Map<String, dynamic>))
           .toList();
