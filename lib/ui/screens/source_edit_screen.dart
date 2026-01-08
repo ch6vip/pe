@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/book_source.dart';
 import '../../services/source_manager_service.dart';
+import 'source_debug_screen.dart';
 
 /// 书源编辑页面
 ///
@@ -105,6 +106,13 @@ class _SourceEditScreenState extends State<SourceEditScreen>
           ],
         ),
         actions: [
+          // 调试按钮（仅在编辑模式下显示）
+          if (widget.source != null)
+            IconButton(
+              icon: const Icon(Icons.bug_report),
+              tooltip: '调试书源',
+              onPressed: _isLoading ? null : _openDebugScreen,
+            ),
           // 保存按钮
           IconButton(
             icon: _isLoading
@@ -273,7 +281,10 @@ class _SourceEditScreenState extends State<SourceEditScreen>
           const Text(
             '示例：{"searchUrl": "/search?q={key}", "ruleList": "class.book-item", "bookName": "text", "bookAuthor": "text"}',
             style: TextStyle(
-                fontSize: 11, color: Colors.grey, fontFamily: 'monospace'),
+              fontSize: 11,
+              color: Colors.grey,
+              fontFamily: 'monospace',
+            ),
           ),
         ],
       ),
@@ -317,7 +328,10 @@ class _SourceEditScreenState extends State<SourceEditScreen>
           const Text(
             '示例：{"chapterList": "class.chapter@tag.a", "chapterName": "text", "chapterUrl": "href"}',
             style: TextStyle(
-                fontSize: 11, color: Colors.grey, fontFamily: 'monospace'),
+              fontSize: 11,
+              color: Colors.grey,
+              fontFamily: 'monospace',
+            ),
           ),
         ],
       ),
@@ -361,7 +375,10 @@ class _SourceEditScreenState extends State<SourceEditScreen>
           const Text(
             '示例：{"content": "id.content@textNodes", "nextUrl": "id.next@href", "replaceRules": ["广告1", "广告2"]}',
             style: TextStyle(
-                fontSize: 11, color: Colors.grey, fontFamily: 'monospace'),
+              fontSize: 11,
+              color: Colors.grey,
+              fontFamily: 'monospace',
+            ),
           ),
         ],
       ),
@@ -450,10 +467,7 @@ class _SourceEditScreenState extends State<SourceEditScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('保存失败: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('保存失败: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -463,5 +477,56 @@ class _SourceEditScreenState extends State<SourceEditScreen>
         });
       }
     }
+  }
+
+  /// 打开调试页面
+  void _openDebugScreen() async {
+    if (widget.source == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请先保存书源后再进行调试'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // 创建当前书源对象（包含最新的编辑内容）
+    final currentSource = BookSource(
+      id: widget.source!.id,
+      name: _nameController.text.trim().isEmpty
+          ? widget.source!.name
+          : _nameController.text.trim(),
+      baseUrl: _baseUrlController.text.trim().isEmpty
+          ? widget.source!.baseUrl
+          : _baseUrlController.text.trim(),
+      enabled: _enabled,
+      ruleSearch: _ruleSearchController.text.trim().isEmpty
+          ? '{}'
+          : _ruleSearchController.text.trim(),
+      ruleChapter: _ruleChapterController.text.trim().isEmpty
+          ? '{}'
+          : _ruleChapterController.text.trim(),
+      ruleContent: _ruleContentController.text.trim().isEmpty
+          ? '{}'
+          : _ruleContentController.text.trim(),
+      iconUrl: _iconUrlController.text.trim().isEmpty
+          ? null
+          : _iconUrlController.text.trim(),
+      author: _authorController.text.trim().isEmpty
+          ? null
+          : _authorController.text.trim(),
+      version: _versionController.text.trim().isEmpty
+          ? null
+          : _versionController.text.trim(),
+      createTime: widget.source!.createTime,
+      updateTime: widget.source!.updateTime,
+    );
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SourceDebugScreen(source: currentSource),
+      ),
+    );
   }
 }
