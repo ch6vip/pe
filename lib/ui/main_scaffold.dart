@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:reader_flutter/ui/screens/bookshelf_screen.dart';
 import 'package:reader_flutter/ui/screens/search_screen.dart';
+import 'package:reader_flutter/ui/screens/settings_screen.dart';
 
-/// 导航项配置
 class _NavigationItem {
   final IconData icon;
   final IconData activeIcon;
@@ -17,9 +17,6 @@ class _NavigationItem {
   });
 }
 
-/// 主框架组件
-///
-/// 包含底部导航栏，管理搜索和书架两个主要页面的切换
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
 
@@ -28,10 +25,11 @@ class MainScaffold extends StatefulWidget {
 }
 
 class _MainScaffoldState extends State<MainScaffold> {
-  /// 当前选中的导航索引
-  int _selectedIndex = 0;
+  // 默认选中书架页（索引 1），因为这是用户最高频使用的页面
+  int _selectedIndex = 1;
 
-  /// 导航项配置列表
+  // 导航项配置列表
+  // 顺序：搜索(0) - 书架(1) - 设置(2)
   static const List<_NavigationItem> _navigationItems = [
     _NavigationItem(
       icon: Icons.search_outlined,
@@ -45,14 +43,20 @@ class _MainScaffoldState extends State<MainScaffold> {
       label: '书架',
       screen: BookshelfScreen(),
     ),
+    _NavigationItem(
+      icon: Icons.settings_outlined,
+      activeIcon: Icons.settings,
+      label: '设置',
+      screen: SettingsScreen(),
+    ),
   ];
 
-  /// 页面控制器，用于保持页面状态
   late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    // 初始化 PageController，初始页为书架（索引 1）
     _pageController = PageController(initialPage: _selectedIndex);
   }
 
@@ -62,15 +66,17 @@ class _MainScaffoldState extends State<MainScaffold> {
     super.dispose();
   }
 
-  /// 处理导航项点击
+  /// 底栏点击事件处理
+  /// 更新选中索引并切换页面
   void _onItemTapped(int index) {
+    // 避免重复点击同一 Tab
     if (index == _selectedIndex) return;
 
     setState(() {
       _selectedIndex = index;
     });
 
-    // 使用 jumpToPage 而非动画，避免不必要的中间页面构建
+    // 使用 jumpToPage 实现无动画切换，保证性能
     _pageController.jumpToPage(index);
   }
 
@@ -79,7 +85,8 @@ class _MainScaffoldState extends State<MainScaffold> {
     return Scaffold(
       body: PageView.builder(
         controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(), // 禁用滑动切换
+        // 禁用滑动手势，仅通过底栏切换
+        physics: const NeverScrollableScrollPhysics(),
         itemCount: _navigationItems.length,
         itemBuilder: (context, index) => _navigationItems[index].screen,
       ),

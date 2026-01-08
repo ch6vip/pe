@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:reader_flutter/models/book.dart';
+import 'package:reader_flutter/models/chapter_content.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 存储异常
@@ -85,7 +87,8 @@ class StorageService {
           .map((bookJson) {
             try {
               return Book.fromJson(
-                  json.decode(bookJson) as Map<String, dynamic>);
+                json.decode(bookJson) as Map<String, dynamic>,
+              );
             } catch (e) {
               // 跳过解析失败的书籍，保持健壮性
               return null;
@@ -107,8 +110,9 @@ class StorageService {
   Future<void> saveBookshelf(List<Book> books) async {
     try {
       final prefs = await _prefs;
-      final List<String> bookshelfJson =
-          books.map((book) => json.encode(book.toJson())).toList();
+      final List<String> bookshelfJson = books
+          .map((book) => json.encode(book.toJson()))
+          .toList();
       await prefs.setStringList(_bookshelfKey, bookshelfJson);
     } catch (e) {
       throw StorageException('保存书架数据失败', originalError: e);
@@ -341,6 +345,64 @@ class StorageService {
       _prefsCache = null;
     } catch (e) {
       throw StorageException('清除数据失败', originalError: e);
+    }
+  }
+
+  // ==================== 章节内容缓存 ====================
+
+  /// 获取章节内容缓存键
+  String _getChapterContentKey(String chapterId) =>
+      'chapter_content_$chapterId';
+
+  /// 保存章节内容
+  ///
+  /// [chapterId] - 章节 ID
+  /// [content] - 章节内容
+  Future<void> saveChapterContent(
+    String chapterId,
+    ChapterContent content,
+  ) async {
+    try {
+      final prefs = await _prefs;
+      await prefs.setString(
+        _getChapterContentKey(chapterId),
+        json.encode(content.toJson()),
+      );
+    } catch (e) {
+      // 缓存失败不抛出异常，仅记录日志（实际项目中应使用日志库）
+      debugPrint('缓存章节内容失败: $e');
+    }
+  }
+
+  /// 获取章节内容缓存
+  ///
+  /// [chapterId] - 章节 ID
+  ///
+  /// Returns: 缓存的章节内容，如果不存在或解析失败则返回 null
+  Future<ChapterContent?> getChapterContent(String chapterId) async {
+    try {
+      final prefs = await _prefs;
+      final jsonString = prefs.getString(_getChapterContentKey(chapterId));
+
+      if (jsonString == null || jsonString.isEmpty) {
+        return null;
+      }
+
+      return ChapterContent.fromJson(json.decode(jsonString));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 检查是否存在章节缓存
+  ///
+  /// [chapterId] - 章节 ID
+  Future<bool> hasChapterContent(String chapterId) async {
+    try {
+      final prefs = await _prefs;
+      return prefs.containsKey(_getChapterContentKey(chapterId));
+    } catch (e) {
+      return false;
     }
   }
 }

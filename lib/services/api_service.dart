@@ -17,11 +17,7 @@ class ApiException implements Exception {
   /// 原始异常（如果有）
   final Object? originalError;
 
-  const ApiException(
-    this.message, {
-    this.statusCode,
-    this.originalError,
-  });
+  const ApiException(this.message, {this.statusCode, this.originalError});
 
   @override
   String toString() =>
@@ -51,9 +47,6 @@ class ApiService {
 
   /// 搜索 API
   static const String _searchApiPath = '$_newApiBase/search';
-
-  /// 书籍详情 API
-  static const String _detailApiPath = '$_newApiBase/detail';
 
   /// 章节列表 API
   static const String _chapterListApiPath = '$_newApiBase/catalog';
@@ -89,14 +82,11 @@ class ApiService {
   Future<Map<String, List<Book>>> fetchHomePageData() async {
     try {
       // 并行请求所有数据源
-      final results = await Future.wait(
-        [
-          _safeGet(_fastUpdateApi),
-          _safeGet(_topListApi),
-          _safeGet(_publishedApi),
-        ],
-        eagerError: false,
-      );
+      final results = await Future.wait([
+        _safeGet(_fastUpdateApi),
+        _safeGet(_topListApi),
+        _safeGet(_publishedApi),
+      ], eagerError: false);
 
       final fastUpdateList = _extractBooks(results[0]);
       final topList = _extractBooks(results[1]);
@@ -156,18 +146,15 @@ class ApiService {
       throw const ApiException('书籍 ID 不能为空');
     }
 
-    final uri = Uri.parse(_chapterListApiPath).replace(
-      queryParameters: {'book_id': bookId},
-    );
+    final uri = Uri.parse(
+      _chapterListApiPath,
+    ).replace(queryParameters: {'book_id': bookId});
 
     try {
       final response = await _getWithTimeout(uri);
 
       if (response.statusCode != 200) {
-        throw ApiException(
-          '获取章节列表失败',
-          statusCode: response.statusCode,
-        );
+        throw ApiException('获取章节列表失败', statusCode: response.statusCode);
       }
 
       final body = _decodeResponse(response);
@@ -200,18 +187,15 @@ class ApiService {
       throw const ApiException('章节 ID 不能为空');
     }
 
-    final uri = Uri.parse(_chapterContentApiPath).replace(
-      queryParameters: {'item_id': itemId},
-    );
+    final uri = Uri.parse(
+      _chapterContentApiPath,
+    ).replace(queryParameters: {'item_id': itemId});
 
     try {
       final response = await _getWithTimeout(uri);
 
       if (response.statusCode != 200) {
-        throw ApiException(
-          '获取章节内容失败',
-          statusCode: response.statusCode,
-        );
+        throw ApiException('获取章节内容失败', statusCode: response.statusCode);
       }
 
       final body = _decodeResponse(response);
@@ -236,12 +220,20 @@ class ApiService {
     }
   }
 
-  /// 带超时的 GET 请求
-  Future<http.Response> _getWithTimeout(Uri uri) async {
-    try {
-      return await _client.get(uri).timeout(_requestTimeout);
-    } catch (e) {
-      throw ApiException('网络请求失败', originalError: e);
+  /// 带超时的 GET 请求，包含简单的重试机制
+  Future<http.Response> _getWithTimeout(Uri uri, {int retries = 2}) async {
+    int attempts = 0;
+    while (true) {
+      try {
+        return await _client.get(uri).timeout(_requestTimeout);
+      } catch (e) {
+        attempts++;
+        if (attempts > retries) {
+          throw ApiException('网络请求失败: $uri', originalError: e);
+        }
+        // 简单的指数退避
+        await Future.delayed(Duration(milliseconds: 500 * attempts));
+      }
     }
   }
 

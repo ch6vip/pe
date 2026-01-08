@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:reader_flutter/controllers/reader_controller.dart';
 import 'package:reader_flutter/models/book.dart';
-import 'package:reader_flutter/models/chapter.dart';
-import 'package:reader_flutter/models/chapter_content.dart';
-import 'package:reader_flutter/services/api_service.dart';
-import 'package:reader_flutter/services/storage_service.dart';
 
 /// 阅读主题配置
 class _ReaderTheme {
   final Color backgroundColor;
   final Color fontColor;
 
-  const _ReaderTheme({
-    required this.backgroundColor,
-    required this.fontColor,
-  });
+  const _ReaderTheme({required this.backgroundColor, required this.fontColor});
 }
 
 /// 阅读器页面
@@ -31,27 +26,8 @@ class ReaderScreen extends StatefulWidget {
 }
 
 class _ReaderScreenState extends State<ReaderScreen> {
-  final ApiService _apiService = ApiService();
-  final StorageService _storageService = StorageService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
-
-  // ==================== 状态变量 ====================
-
-  /// 章节列表
-  List<Chapter> _chapters = [];
-
-  /// 当前章节内容
-  ChapterContent? _currentContent;
-
-  /// 当前章节索引
-  int _currentChapterIndex = 0;
-
-  /// 是否正在加载
-  bool _isLoading = true;
-
-  /// 错误信息
-  String? _errorMessage;
 
   // ==================== 阅读设置 ====================
 
@@ -91,171 +67,56 @@ class _ReaderScreenState extends State<ReaderScreen> {
   _ReaderTheme get _currentTheme => _themes[_themeIndex];
 
   @override
-  void initState() {
-    super.initState();
-    _loadInitialData();
-  }
-
-  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
 
-  // ==================== 数据加载 ====================
-
-  /// 加载初始数据
-  Future<void> _loadInitialData() async {
-    try {
-      final chapters = await _apiService.getChapterList(widget.book.id);
-
-      if (chapters.isEmpty) {
-        setState(() {
-          _errorMessage = '未能加载到章节列表';
-          _isLoading = false;
-        });
-        return;
-      }
-
-      setState(() {
-        _chapters = chapters;
-      });
-
-      // 查找上次阅读位置
-      final initialIndex = await _findLastReadChapterIndex(chapters);
-      await _loadChapterContent(initialIndex);
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _errorMessage = '加载章节列表失败，请检查网络连接';
-        _isLoading = false;
-      });
-    }
-  }
-
-  /// 查找上次阅读的章节索引
-  Future<int> _findLastReadChapterIndex(List<Chapter> chapters) async {
-    try {
-      final bookshelf = await _storageService.getBookshelf();
-      final savedBook = bookshelf.firstWhere(
-        (b) => b.id == widget.book.id,
-        orElse: () => widget.book,
-      );
-
-      if (savedBook.lastReadChapterTitle != null) {
-        final savedIndex = chapters.indexWhere(
-          (c) => c.title == savedBook.lastReadChapterTitle,
-        );
-        if (savedIndex != -1) {
-          return savedIndex;
-        }
-      }
-    } catch (e) {
-      // 忽略错误，默认从第一章开始
-    }
-    return 0;
-  }
-
-  /// 加载章节内容
-  Future<void> _loadChapterContent(int index) async {
-    if (index < 0 || index >= _chapters.length) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final content =
-          await _apiService.getChapterContent(_chapters[index].itemId);
-
-      if (!mounted) return;
-
-      setState(() {
-        _currentContent = content;
-        _currentChapterIndex = index;
-        _isLoading = false;
-      });
-
-      // 滚动到顶部
-      _scrollController.jumpTo(0);
-
-      // 保存阅读进度
-      _saveProgress(index);
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _errorMessage = '加载章节内容失败';
-        _isLoading = false;
-      });
-    }
-  }
-
-  /// 保存阅读进度
-  Future<void> _saveProgress(int chapterIndex) async {
-    try {
-      await _storageService.updateReadingProgress(
-        widget.book.id,
-        _chapters[chapterIndex].title,
-      );
-    } catch (e) {
-      // 保存进度失败不应影响阅读体验
-    }
-  }
-
-  // ==================== 章节导航 ====================
-
-  /// 前往上一章
-  void _goToPreviousChapter() {
-    if (_currentChapterIndex > 0) {
-      _loadChapterContent(_currentChapterIndex - 1);
-    }
-  }
-
-  /// 前往下一章
-  void _goToNextChapter() {
-    if (_currentChapterIndex < _chapters.length - 1) {
-      _loadChapterContent(_currentChapterIndex + 1);
-    }
-  }
-
-  /// 是否有上一章
-  bool get _hasPreviousChapter => _currentChapterIndex > 0;
-
-  /// 是否有下一章
-  bool get _hasNextChapter => _currentChapterIndex < _chapters.length - 1;
-
-  // ==================== UI 构建 ====================
-
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: _themeIndex == 3
-          ? SystemUiOverlayStyle.light
-          : SystemUiOverlayStyle.dark,
-      child: Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: _currentTheme.backgroundColor,
-        appBar: _buildAppBar(),
-        body: GestureDetector(
-          onTap: _toggleUiVisibility,
-          child: _buildBody(),
-        ),
-        bottomNavigationBar: _buildBottomBar(),
-        endDrawer: _buildChapterDrawer(),
+    return ChangeNotifierProvider(
+      create: (_) => ReaderController(book: widget.book)..initialize(),
+      child: Consumer<ReaderController>(
+        builder: (context, controller, child) {
+          // 监听内容变化，滚动到顶部
+          // 注意：这里使用 addPostFrameCallback 避免在 build 过程中调用 jumpTo
+          if (controller.currentContent != null &&
+              _scrollController.hasClients &&
+              _scrollController.offset > 0) {
+            // 简单的判断可能不够，理想情况下应该由 Controller 通知滚动
+            // 但为了简化，这里假设每次内容变化都是新章节，需要重置滚动
+            // 实际项目中可以使用 EventBus 或 Stream 来处理这种一次性事件
+            // 或者在 Controller 中增加一个 version 字段来比较
+          }
+
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: _themeIndex == 3
+                ? SystemUiOverlayStyle.light
+                : SystemUiOverlayStyle.dark,
+            child: Scaffold(
+              key: _scaffoldKey,
+              backgroundColor: _currentTheme.backgroundColor,
+              appBar: _buildAppBar(controller),
+              body: GestureDetector(
+                onTap: _toggleUiVisibility,
+                child: _buildBody(controller),
+              ),
+              bottomNavigationBar: _buildBottomBar(controller),
+              endDrawer: _buildChapterDrawer(controller),
+            ),
+          );
+        },
       ),
     );
   }
 
   /// 构建应用栏
-  PreferredSizeWidget? _buildAppBar() {
+  PreferredSizeWidget? _buildAppBar(ReaderController controller) {
     if (!_isUiVisible) return null;
 
     return AppBar(
       title: Text(
-        _currentContent?.title ?? widget.book.name,
+        controller.currentContent?.title ?? widget.book.name,
         overflow: TextOverflow.ellipsis,
       ),
       backgroundColor: _currentTheme.backgroundColor,
@@ -266,35 +127,36 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   /// 构建主体内容
-  Widget _buildBody() {
-    if (_isLoading && _currentContent == null) {
+  Widget _buildBody(ReaderController controller) {
+    if (controller.isLoading && controller.currentContent == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_errorMessage != null) {
-      return _buildErrorState();
+    if (controller.errorMessage != null) {
+      return _buildErrorState(controller);
     }
 
-    if (_currentContent == null) {
+    if (controller.currentContent == null) {
       return Center(
-        child: Text(
-          '没有内容',
-          style: TextStyle(color: _currentTheme.fontColor),
-        ),
+        child: Text('没有内容', style: TextStyle(color: _currentTheme.fontColor)),
       );
     }
 
+    // 每次内容变化时重置滚动位置
+    // 使用 Key 强制重建 SingleChildScrollView 是一种简单有效的方法
     return SingleChildScrollView(
+      key: ValueKey(controller.currentContent!.title),
       controller: _scrollController,
       padding: EdgeInsets.only(
         left: 20.0,
         right: 20.0,
         top: _isUiVisible ? 20.0 : MediaQuery.of(context).padding.top + 20.0,
-        bottom:
-            _isUiVisible ? 20.0 : MediaQuery.of(context).padding.bottom + 20.0,
+        bottom: _isUiVisible
+            ? 20.0
+            : MediaQuery.of(context).padding.bottom + 20.0,
       ),
       child: Text(
-        _currentContent!.content,
+        controller.currentContent!.content,
         style: TextStyle(
           fontSize: _fontSize,
           height: _lineHeight,
@@ -305,7 +167,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   /// 构建错误状态
-  Widget _buildErrorState() {
+  Widget _buildErrorState(ReaderController controller) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -319,13 +181,14 @@ class _ReaderScreenState extends State<ReaderScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              _errorMessage!,
+              controller.errorMessage!,
               style: TextStyle(color: _currentTheme.fontColor),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => _loadChapterContent(_currentChapterIndex),
+              onPressed: () =>
+                  controller.loadChapterContent(controller.currentChapterIndex),
               child: const Text('重试'),
             ),
           ],
@@ -335,7 +198,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   /// 构建底部导航栏
-  Widget? _buildBottomBar() {
+  Widget? _buildBottomBar(ReaderController controller) {
     if (!_isUiVisible) return null;
 
     return BottomAppBar(
@@ -347,7 +210,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
           // 上一章
           IconButton(
             icon: Icon(Icons.arrow_back, color: _currentTheme.fontColor),
-            onPressed: _hasPreviousChapter ? _goToPreviousChapter : null,
+            onPressed: controller.hasPreviousChapter
+                ? controller.goToPreviousChapter
+                : null,
             tooltip: '上一章',
           ),
           // 目录
@@ -365,7 +230,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
           // 下一章
           IconButton(
             icon: Icon(Icons.arrow_forward, color: _currentTheme.fontColor),
-            onPressed: _hasNextChapter ? _goToNextChapter : null,
+            onPressed: controller.hasNextChapter
+                ? controller.goToNextChapter
+                : null,
             tooltip: '下一章',
           ),
         ],
@@ -374,7 +241,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   /// 构建章节目录抽屉
-  Widget _buildChapterDrawer() {
+  Widget _buildChapterDrawer(ReaderController controller) {
     return Drawer(
       child: SafeArea(
         child: Column(
@@ -383,20 +250,21 @@ class _ReaderScreenState extends State<ReaderScreen> {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
-                '目录 (${_chapters.length}章)',
+                '目录 (${controller.chapters.length}章)',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
             const Divider(height: 1),
             // 章节列表
             Expanded(
-              child: _chapters.isEmpty
+              child: controller.chapters.isEmpty
                   ? const Center(child: Text('暂无章节'))
                   : ListView.builder(
-                      itemCount: _chapters.length,
+                      itemCount: controller.chapters.length,
                       itemBuilder: (context, index) {
-                        final chapter = _chapters[index];
-                        final isCurrent = index == _currentChapterIndex;
+                        final chapter = controller.chapters[index];
+                        final isCurrent =
+                            index == controller.currentChapterIndex;
 
                         return ListTile(
                           title: Text(
@@ -414,7 +282,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                           ),
                           onTap: () {
                             Navigator.of(context).pop();
-                            _loadChapterContent(index);
+                            controller.loadChapterContent(index);
                           },
                         );
                       },

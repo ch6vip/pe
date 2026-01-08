@@ -94,7 +94,8 @@ class _BookshelfScreenState extends State<BookshelfScreen>
     switch (_sortOrder) {
       case SortOrder.byReadTime:
         books.sort(
-            (a, b) => (b.lastReadTime ?? 0).compareTo(a.lastReadTime ?? 0));
+          (a, b) => (b.lastReadTime ?? 0).compareTo(a.lastReadTime ?? 0),
+        );
       case SortOrder.byAddTime:
         books.sort((a, b) => (b.addTime ?? 0).compareTo(a.addTime ?? 0));
     }
@@ -159,9 +160,9 @@ class _BookshelfScreenState extends State<BookshelfScreen>
       } catch (e) {
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('移除失败，请稍后重试')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('移除失败，请稍后重试')));
       }
     }
   }
@@ -205,10 +206,7 @@ class _BookshelfScreenState extends State<BookshelfScreen>
       padding: EdgeInsets.symmetric(vertical: 10.0),
       child: Text(
         '我的书架',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -265,10 +263,7 @@ class _BookshelfScreenState extends State<BookshelfScreen>
             style: const TextStyle(fontSize: 16, color: Colors.grey),
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadBookshelf,
-            child: const Text('重试'),
-          ),
+          ElevatedButton(onPressed: _loadBookshelf, child: const Text('重试')),
         ],
       ),
     );
@@ -280,11 +275,7 @@ class _BookshelfScreenState extends State<BookshelfScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.book_outlined,
-            size: 80,
-            color: Colors.grey.shade300,
-          ),
+          Icon(Icons.book_outlined, size: 80, color: Colors.grey.shade300),
           const SizedBox(height: 20),
           const Text(
             '书架空空如也',
@@ -390,6 +381,8 @@ class _BookGridItem extends StatelessWidget {
                 child: Image.network(
                   book.coverUrl,
                   fit: BoxFit.cover,
+                  // 启用内存缓存，避免重复下载
+                  cacheWidth: 300, // 限制缓存图片宽度，减少内存占用
                   errorBuilder: (context, error, stackTrace) => Container(
                     color: Colors.grey.shade200,
                     child: const Icon(
@@ -414,10 +407,7 @@ class _BookGridItem extends StatelessWidget {
           // 书名
           Text(
             book.name,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -425,10 +415,7 @@ class _BookGridItem extends StatelessWidget {
           // 阅读进度
           Text(
             book.lastReadChapterTitle ?? '尚未阅读',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
