@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:reader_flutter/models/book.dart';
 import 'package:reader_flutter/models/chapter.dart';
@@ -103,7 +102,6 @@ class ApiService {
         'topList': topList,
         'publishedList': publishedList,
       };
-      _logService.info('首页数据获取成功', tag: 'ApiService');
     } catch (e, stackTrace) {
       _logService.error('获取首页数据失败',
           error: e, stackTrace: stackTrace, tag: 'ApiService');
@@ -126,7 +124,7 @@ class ApiService {
       return [];
     }
 
-    _logService.info('搜索书籍：$query (第${page}页)', tag: 'ApiService');
+    _logService.info('搜索书籍：$query (第$page页)', tag: 'ApiService');
     final params = {
       'query': query.trim(),
       'offset': (page > 0 ? page - 1 : 0).toString(),
@@ -183,6 +181,7 @@ class ApiService {
 
       if (data is Map<String, dynamic>) {
         itemList = (data['item_list'] ??
+            data['item_data_list'] ??
             data['chapter_list'] ??
             data['chapters'] ??
             data['list']) as List<dynamic>?;
@@ -191,23 +190,54 @@ class ApiService {
       }
 
       // 如果 data 为空，尝试直接从 body 获取
-      if (itemList == null) {
-        itemList = (body['item_list'] ??
-            body['chapter_list'] ??
-            body['chapters'] ??
-            body['list']) as List<dynamic>?;
-      }
+      itemList ??= (body['item_list'] ??
+          body['item_data_list'] ??
+          body['chapter_list'] ??
+          body['chapters'] ??
+          body['list']) as List<dynamic>?;
 
       if (itemList == null) {
-        // 打印调试信息以便排查
-        _logService.error('章节列表解析失败，响应数据: $body', tag: 'ApiService');
+        // 优化日志：只打印响应摘要，避免刷屏
+        final responseSummary = _getResponseSummary(body);
+        _logService.error('章节列表解析失败，响应结构: $responseSummary', tag: 'ApiService');
+        _logService.debug('完整响应数据(仅Debug模式): $body', tag: 'ApiService');
         throw const ApiException('章节列表数据格式错误');
       }
 
-      final chapters = itemList
-          .map((item) => Chapter.fromJson(item as Map<String, dynamic>))
-          .toList();
-      _logService.info('获取章节列表成功，共${chapters.length}章', tag: 'ApiService');
+      // 增强的章节解析，支持单个章节解析失败时的容错处理
+      final chapters = <Chapter>[];
+      int failedCount = 0;
+
+      for (int i = 0; i < itemList.length; i++) {
+        try {
+          final item = itemList[i];
+          if (item is Map<String, dynamic>) {
+            final chapter = Chapter.fromJson(item);
+            chapters.add(chapter);
+          } else {
+            failedCount++;
+            _logService.warning('章节${i + 1}数据格式错误，跳过: ${item.runtimeType}',
+                tag: 'ApiService');
+          }
+        } catch (e, stackTrace) {
+          failedCount++;
+          _logService.error('章节${i + 1}解析失败，跳过',
+              error: e, stackTrace: stackTrace, tag: 'ApiService');
+        }
+      }
+
+      if (chapters.isEmpty) {
+        _logService.error('所有章节解析均失败', tag: 'ApiService');
+        throw const ApiException('章节列表解析失败');
+      }
+
+      if (failedCount > 0) {
+        _logService.warning('章节列表解析完成，成功${chapters.length}章，失败$failedCount章',
+            tag: 'ApiService');
+      } else {
+        _logService.info('获取章节列表成功，共${chapters.length}章', tag: 'ApiService');
+      }
+
       return chapters;
     } catch (e, stackTrace) {
       _logService.error('获取章节列表失败：$bookId',
@@ -262,6 +292,38 @@ class ApiService {
   }
 
   // ==================== 私有辅助方法 ====================
+
+  /// 获取响应数据的摘要信息
+  ///
+  /// 避免在生产日志中打印完整的JSON响应体
+  String _getResponseSummary(Map<String, dynamic> body) {
+    final summary = <String, dynamic>{};
+
+    // 记录关键字段
+    if (body.containsKey('code')) summary['code'] = body['code'];
+    if (body.containsKey('message')) summary['message'] = body['message'];
+    if (body.containsKey('data')) {
+      final data = body['data'];
+      if (data is Map) {
+        summary['data_type'] = 'Map';
+        summary['data_keys'] = data.keys.toList();
+        // 记录数组字段的长度
+        for (final key in data.keys) {
+          final value = data[key];
+          if (value is List) {
+            summary['${key}_length'] = value.length;
+          }
+        }
+      } else if (data is List) {
+        summary['data_type'] = 'List';
+        summary['data_length'] = data.length;
+      } else {
+        summary['data_type'] = data.runtimeType.toString();
+      }
+    }
+
+    return summary.toString();
+  }
 
   /// 安全的 GET 请求，失败时返回空响应而不是抛出异常
   Future<http.Response?> _safeGet(String url) async {

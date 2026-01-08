@@ -56,6 +56,7 @@ class ReaderController extends ChangeNotifier {
   Future<void> initialize() async {
     try {
       _isLoading = true;
+      _errorMessage = null;
       notifyListeners();
 
       _logService.info('开始初始化阅读器', tag: 'ReaderController');
@@ -63,12 +64,28 @@ class ReaderController extends ChangeNotifier {
           tag: 'ReaderController');
 
       // 1. 加载章节列表
-      _chapters = await _apiService.getChapterList(book.id);
-      _logService.info('成功加载章节列表，共${_chapters.length}章',
-          tag: 'ReaderController');
+      try {
+        _chapters = await _apiService.getChapterList(book.id);
+        _logService.info('成功加载章节列表，共${_chapters.length}章',
+            tag: 'ReaderController');
+      } catch (e, stackTrace) {
+        _logService.error('加载章节列表失败',
+            error: e, stackTrace: stackTrace, tag: 'ReaderController');
+
+        // 根据错误类型提供更友好的错误信息
+        if (e is ApiException) {
+          _errorMessage = _getApiErrorMessage(e);
+        } else {
+          _errorMessage = '加载章节列表失败，请检查网络连接后重试';
+        }
+
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
 
       if (_chapters.isEmpty) {
-        _errorMessage = '未能加载到章节列表';
+        _errorMessage = '该书籍暂无章节内容';
         _logService.error('章节列表为空', tag: 'ReaderController');
         _isLoading = false;
         notifyListeners();
@@ -85,7 +102,7 @@ class ReaderController extends ChangeNotifier {
       await loadChapterContent(initialIndex);
       _logService.info('阅读器初始化完成', tag: 'ReaderController');
     } catch (e, stackTrace) {
-      _errorMessage = '加载失败: $e';
+      _errorMessage = '初始化失败，请重试';
       _logService.error('阅读器初始化失败',
           error: e, stackTrace: stackTrace, tag: 'ReaderController');
       _isLoading = false;
@@ -147,25 +164,42 @@ class ReaderController extends ChangeNotifier {
       } else {
         // 2. 缓存未命中，请求网络
         _logService.debug('缓存未命中，从网络请求', tag: 'ReaderController');
-        content = await _apiService.getChapterContent(chapter.itemId);
-        _currentContent = content;
 
-        // 保存到缓存
-        await _storageService.saveChapterContent(chapter.itemId, content);
-        _logService.debug('章节内容已保存到缓存', tag: 'ReaderController');
+        try {
+          content = await _apiService.getChapterContent(chapter.itemId);
+          _currentContent = content;
 
-        _isLoading = false;
-        notifyListeners();
+          // 保存到缓存
+          await _storageService.saveChapterContent(chapter.itemId, content);
+          _logService.debug('章节内容已保存到缓存', tag: 'ReaderController');
+        } catch (e, stackTrace) {
+          _logService.error('从网络加载章节失败：${chapter.title}',
+              error: e, stackTrace: stackTrace, tag: 'ReaderController');
+
+          // 根据错误类型提供更友好的错误信息
+          if (e is ApiException) {
+            _errorMessage = _getApiErrorMessage(e);
+          } else {
+            _errorMessage = '加载章节失败，请检查网络连接';
+          }
+
+          _isLoading = false;
+          notifyListeners();
+          return;
+        }
       }
 
+      _isLoading = false;
+      notifyListeners();
+
       // 3. 保存阅读进度
-      _saveProgress(index);
+      await _saveProgress(index);
 
       // 4. 预加载下一章
       _preloadNextChapter(index);
       _logService.info('章节加载完成：${chapter.title}', tag: 'ReaderController');
     } catch (e, stackTrace) {
-      _errorMessage = '加载章节内容失败';
+      _errorMessage = '加载章节时发生未知错误';
       _logService.error('加载章节失败：${chapter.title}',
           error: e, stackTrace: stackTrace, tag: 'ReaderController');
       _isLoading = false;
@@ -239,4 +273,31 @@ class ReaderController extends ChangeNotifier {
 
   /// 是否有下一章
   bool get hasNextChapter => _currentChapterIndex < _chapters.length - 1;
+
+  /// 重试加载
+  Future<void> retry() async {
+    _logService.info('用户点击重试', tag: 'ReaderController');
+    await initialize();
+  }
+
+  /// 获取用户友好的 API 错误信息
+  String _getApiErrorMessage(ApiException e) {
+    final message = e.message.toLowerCase();
+
+    if (message.contains('网络') ||
+        message.contains('network') ||
+        e.statusCode != null) {
+      return '网络连接失败，请检查网络后重试';
+    } else if (message.contains('解析') || message.contains('parse')) {
+      return '数据格式错误，请稍后重试';
+    } else if (message.contains('超时') || message.contains('timeout')) {
+      return '请求超时，请稍后重试';
+    } else if (message.contains('章节列表') || message.contains('chapter')) {
+      return '获取章节列表失败，请重试';
+    } else if (message.contains('章节内容') || message.contains('content')) {
+      return '获取章节内容失败，请重试';
+    } else {
+      return '加载失败，请重试';
+    }
+  }
 }
