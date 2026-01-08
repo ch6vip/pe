@@ -26,11 +26,35 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
         title: const Text('书源管理'),
         elevation: 0,
         actions: [
-          // 右上角添加按钮
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: '添加书源',
-            onPressed: () => _navigateToEditScreen(context),
+          // 网络导入按钮
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: '更多操作',
+            onSelected: (value) {
+              if (value == 'network_import') {
+                _showNetworkImportDialog(context);
+              } else if (value == 'add_source') {
+                _navigateToEditScreen(context);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'network_import',
+                child: Row(
+                  children: [
+                    Icon(Icons.cloud_download),
+                    SizedBox(width: 8),
+                    Text('网络导入'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'add_source',
+                child: Row(
+                  children: [Icon(Icons.add), SizedBox(width: 8), Text('添加书源')],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -38,9 +62,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
         builder: (context, sourceService, child) {
           // 显示加载状态
           if (sourceService.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           // 显示错误信息
@@ -49,11 +71,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red,
-                  ),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   Text(
                     sourceService.errorMessage!,
@@ -84,18 +102,12 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
                   const SizedBox(height: 16),
                   Text(
                     '暂无书源',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '点击右上角 + 添加书源',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -195,20 +207,16 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
             color: color,
           ),
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }
 
   /// 构建书源列表项
   Widget _buildSourceItem(
-      BookSource source, SourceManagerService sourceService) {
+    BookSource source,
+    SourceManagerService sourceService,
+  ) {
     return Dismissible(
       key: Key(source.id),
       direction: DismissDirection.endToStart,
@@ -222,10 +230,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
           color: Colors.red,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(
-          Icons.delete,
-          color: Colors.white,
-        ),
+        child: const Icon(Icons.delete, color: Colors.white),
       ),
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -266,10 +271,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
               if (source.author != null)
                 Text(
                   '作者: ${source.author}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                 ),
             ],
           ),
@@ -307,15 +309,15 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
   void _navigateToEditScreen(BuildContext context, {BookSource? source}) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => SourceEditScreen(source: source),
-      ),
+      MaterialPageRoute(builder: (context) => SourceEditScreen(source: source)),
     );
   }
 
   /// 确认删除书源
   void _confirmDeleteSource(
-      BookSource source, SourceManagerService sourceService) {
+    BookSource source,
+    SourceManagerService sourceService,
+  ) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -331,9 +333,9 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
               final success = await sourceService.deleteSource(source.id);
               Navigator.pop(dialogContext);
               if (success && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('书源已删除')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('书源已删除')));
               }
             },
             style: ElevatedButton.styleFrom(
@@ -341,6 +343,114 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
               foregroundColor: Colors.white,
             ),
             child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示网络导入对话框
+  void _showNetworkImportDialog(BuildContext context) {
+    final urlController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('网络导入'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('请输入书源文件的 URL 地址：', style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: urlController,
+              decoration: const InputDecoration(
+                hintText: 'https://example.com/sources.json',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.link),
+              ),
+              maxLines: 2,
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '支持 JSON 格式的单个书源或书源数组',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final url = urlController.text.trim();
+              if (url.isEmpty) {
+                ScaffoldMessenger.of(
+                  dialogContext,
+                ).showSnackBar(const SnackBar(content: Text('请输入 URL')));
+                return;
+              }
+
+              Navigator.pop(dialogContext);
+
+              // 显示加载提示
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(width: 16),
+                      Text('正在导入...'),
+                    ],
+                  ),
+                  duration: Duration(seconds: 30),
+                ),
+              );
+
+              try {
+                final sourceService = Provider.of<SourceManagerService>(
+                  context,
+                  listen: false,
+                );
+
+                final importedCount = await sourceService.importSourceFromUrl(
+                  url,
+                );
+
+                // 清除加载提示
+                ScaffoldMessenger.of(context).clearSnackBars();
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('成功导入 $importedCount 个书源'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                // 清除加载提示
+                ScaffoldMessenger.of(context).clearSnackBars();
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('导入失败: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('确定'),
           ),
         ],
       ),

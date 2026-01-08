@@ -237,7 +237,7 @@ class _SourceDebugScreenState extends State<SourceDebugScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.auto_scroll, size: 16),
+              const Icon(Icons.autorenew, size: 16),
               const SizedBox(width: 4),
               const Text('自动滚动'),
               Switch(

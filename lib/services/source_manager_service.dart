@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../models/book_source.dart';
 
 /// 书源管理服务
@@ -76,7 +77,9 @@ class SourceManagerService extends ChangeNotifier {
       );
       await prefs.setString(_sourcesKey, sourcesJson);
       await prefs.setInt(
-          _lastUpdateTimeKey, DateTime.now().millisecondsSinceEpoch);
+        _lastUpdateTimeKey,
+        DateTime.now().millisecondsSinceEpoch,
+      );
       _clearError();
     } catch (e) {
       _setError('保存书源数据失败: $e');
@@ -159,8 +162,9 @@ class SourceManagerService extends ChangeNotifier {
     try {
       _setLoading(true);
 
-      final index =
-          _sources.indexWhere((source) => source.id == updatedSource.id);
+      final index = _sources.indexWhere(
+        (source) => source.id == updatedSource.id,
+      );
       if (index == -1) {
         _setError('未找到要更新的书源');
         return false;
@@ -297,5 +301,117 @@ class SourceManagerService extends ChangeNotifier {
   /// 手动清除错误信息（供外部调用）
   void clearError() {
     _clearError();
+  }
+
+  /// 从 URL 导入书源
+  ///
+  /// 支持 JSON 格式的书源文件，可以是单个书源对象或书源数组
+  /// 返回成功导入的书源数量
+  Future<int> importSourceFromUrl(String url) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      // 验证 URL
+      if (url.trim().isEmpty) {
+        throw Exception('URL 不能为空');
+      }
+
+      // 发起网络请求
+      final response = await http.get(
+        Uri.parse(url.trim()),
+        headers: {
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        throw Exception('网络请求失败，状态码: ${response.statusCode}');
+      }
+
+      // 解析响应数据
+      final responseData = json.decode(response.body);
+      List<BookSource> sourcesToImport = [];
+
+      // 处理 JSON 数据兼容性：可能是单个对象或数组
+      if (responseData is List) {
+        // JSON 数组：遍历每个元素转换为 BookSource
+        for (final item in responseData) {
+          if (item is Map<String, dynamic>) {
+            try {
+              final source = BookSource.fromJson(item);
+              sourcesToImport.add(source);
+            } catch (e) {
+              // 调试信息：解析单个书源失败
+              debugPrint('解析单个书源失败: $e, 数据: $item');
+            }
+          }
+        }
+      } else if (responseData is Map<String, dynamic>) {
+        // JSON 对象：直接转换为 BookSource
+        try {
+          final source = BookSource.fromJson(responseData);
+          sourcesToImport.add(source);
+        } catch (e) {
+          throw Exception('解析书源数据失败: $e');
+        }
+      } else {
+        throw Exception('不支持的数据格式，期望 JSON 对象或数组');
+      }
+
+      if (sourcesToImport.isEmpty) {
+        throw Exception('未找到有效的书源数据');
+      }
+
+      // 批量导入书源（去重逻辑）
+      int importedCount = 0;
+      for (final source in sourcesToImport) {
+        bool shouldAdd = true;
+        bool shouldUpdate = false;
+
+        // 如果存在相同 baseUrl，则更新
+        if (_sources.any((s) => s.baseUrl == source.baseUrl)) {
+          shouldAdd = false;
+          shouldUpdate = true;
+        }
+        // 如果存在相同名称但不同 baseUrl，则跳过（避免重复）
+        else if (_sources.any((s) => s.name == source.name)) {
+          shouldAdd = false;
+        }
+
+        if (shouldUpdate) {
+          // 更新现有书源
+          final index = _sources.indexWhere((s) => s.baseUrl == source.baseUrl);
+          final updatedSource = source.copyWith(
+            id: _sources[index].id, // 保持原有 ID
+            updateTime: DateTime.now().millisecondsSinceEpoch,
+          );
+          _sources[index] = updatedSource;
+          importedCount++;
+        } else if (shouldAdd) {
+          // 添加新书源
+          final newSource = source.copyWith(
+            createTime: DateTime.now().millisecondsSinceEpoch,
+            updateTime: DateTime.now().millisecondsSinceEpoch,
+          );
+          _sources.add(newSource);
+          importedCount++;
+        }
+      }
+
+      // 保存到本地存储
+      if (importedCount > 0) {
+        await _saveSources();
+        notifyListeners();
+      }
+
+      return importedCount;
+    } catch (e) {
+      _setError('导入失败: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
   }
 }
