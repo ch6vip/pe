@@ -126,7 +126,7 @@ class ApiService {
 
     try {
       final response = await _getWithTimeout(uri);
-      return _extractBooks(response);
+      return _extractSearchBooks(response);
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException('搜索书籍失败', originalError: e);
@@ -220,12 +220,35 @@ class ApiService {
     }
   }
 
-  /// 带超时的 GET 请求，包含简单的重试机制
+  /// 带超时的 GET 请求，包含简单的重试机制和重定向跟随
   Future<http.Response> _getWithTimeout(Uri uri, {int retries = 2}) async {
     int attempts = 0;
     while (true) {
       try {
-        return await _client.get(uri).timeout(_requestTimeout);
+        final response = await _client.get(uri).timeout(_requestTimeout);
+
+        // 处理 301/302 重定向
+        if (response.statusCode == 301 || response.statusCode == 302) {
+          final location = response.headers['location'];
+          if (location != null) {
+            final redirectUri = Uri.parse(location);
+            // 如果是相对路径，基于原 URI 构建
+            if (!redirectUri.hasScheme) {
+              return await _getWithTimeout(
+                uri.replace(
+                  path: redirectUri.path,
+                  queryParameters: redirectUri.queryParameters.isEmpty
+                      ? uri.queryParameters
+                      : redirectUri.queryParameters,
+                ),
+                retries: retries,
+              );
+            }
+            return await _getWithTimeout(redirectUri, retries: retries);
+          }
+        }
+
+        return response;
       } catch (e) {
         attempts++;
         if (attempts > retries) {
@@ -271,6 +294,80 @@ class ApiService {
             .whereType<Map<String, dynamic>>()
             .map((item) => Book.fromJson(item))
             .toList();
+      }
+
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// 从搜索API响应中提取书籍列表
+  ///
+  /// 搜索API返回格式：
+  /// ```json
+  /// {
+  ///   "code": 0,
+  ///   "message": "SUCCESS",
+  ///   "search_tabs": [
+  ///     {
+  ///       "tab_type": 3,
+  ///       "data": [
+  ///         {
+  ///           "book_data": [
+  ///             {
+  ///               "book_id": "123456",
+  ///               "book_name": "书名",
+  ///               "author": "作者",
+  ///               "thumb_url": "封面URL",
+  ///               "abstract": "简介"
+  ///             }
+  ///           ]
+  ///         }
+  ///       ]
+  ///     }
+  ///   ]
+  /// }
+  /// ```
+  List<Book> _extractSearchBooks(http.Response response) {
+    if (response.statusCode != 200) {
+      return [];
+    }
+
+    try {
+      final body = _decodeResponse(response);
+
+      // 检查响应状态
+      if (body['code'] != 0) {
+        return [];
+      }
+
+      // 获取 search_tabs
+      final searchTabs = body['search_tabs'];
+      if (searchTabs == null || searchTabs is! List) {
+        return [];
+      }
+
+      // 遍历所有标签，找到包含书籍数据的标签
+      for (final tab in searchTabs) {
+        if (tab is! Map<String, dynamic>) continue;
+
+        final tabData = tab['data'];
+        if (tabData == null || tabData is! List) continue;
+
+        // 遍历标签数据，找到包含 book_data 的项
+        for (final item in tabData) {
+          if (item is! Map<String, dynamic>) continue;
+
+          final bookData = item['book_data'];
+          if (bookData == null || bookData is! List) continue;
+
+          // 提取书籍列表
+          return bookData
+              .whereType<Map<String, dynamic>>()
+              .map((book) => Book.fromSearchData(book))
+              .toList();
+        }
       }
 
       return [];

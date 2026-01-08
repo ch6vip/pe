@@ -8,6 +8,9 @@ class ChapterContent {
   /// 章节正文内容（已处理过的纯文本）
   final String content;
 
+  /// 章节ID（可选）
+  final String? itemId;
+
   /// HTML 段落起始标签正则（如 <p>, <p class="...">）
   static final RegExp _pTagStartPattern = RegExp(r'<p[^>]*>');
 
@@ -17,9 +20,16 @@ class ChapterContent {
   /// 所有 HTML 标签正则
   static final RegExp _allTagsPattern = RegExp(r'<[^>]*>');
 
+  /// HTML article 标签正则
+  static final RegExp _articlePattern = RegExp(
+    r'<article>.*?</article>',
+    dotAll: true,
+  );
+
   const ChapterContent({
     required this.title,
     required this.content,
+    this.itemId,
   });
 
   /// 从 JSON Map 创建 ChapterContent 实例
@@ -59,18 +69,29 @@ class ChapterContent {
     return ChapterContent(
       title: (data['title'] as String?) ?? '未知标题',
       content: processedContent,
+      itemId: data['item_id']?.toString(),
     );
   }
 
   /// 处理 HTML 内容，移除标签并格式化换行
   ///
   /// 处理流程：
-  /// 1. 移除 <p> 起始标签
-  /// 2. 将 </p> 结束标签替换为双换行
-  /// 3. 移除其他所有 HTML 标签
-  /// 4. 去除首尾空白
+  /// 1. 提取 article 标签内的内容（如果存在）
+  /// 2. 移除 <p> 起始标签
+  /// 3. 将 </p> 结束标签替换为双换行
+  /// 4. 移除其他所有 HTML 标签
+  /// 5. 去除首尾空白
   static String _processHtmlContent(String rawContent) {
-    return rawContent
+    // 先解码 Unicode 转义序列（如 \u003c -> <）
+    String decodedContent = rawContent;
+
+    // 提取 article 标签内的内容
+    final articleMatch = _articlePattern.firstMatch(decodedContent);
+    if (articleMatch != null) {
+      decodedContent = articleMatch.group(0)!;
+    }
+
+    return decodedContent
         .replaceAll(_pTagStartPattern, '')
         .replaceAll(_pTagEndPattern, '\n\n')
         .replaceAll(_allTagsPattern, '')
@@ -83,6 +104,7 @@ class ChapterContent {
       'data': {
         'title': title,
         'content': content,
+        if (itemId != null) 'item_id': itemId,
       },
     };
   }

@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:reader_flutter/ui/main_scaffold.dart';
+import 'package:reader_flutter/services/reader_settings_service.dart';
 
 /// 应用入口函数
-void main() {
+void main() async {
   // 确保 Flutter 绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化阅读器设置服务（加载持久化数据）
+  final readerSettingsService = ReaderSettingsService();
+  await readerSettingsService.loadSettings();
 
   // 设置系统 UI 样式
   SystemChrome.setSystemUIOverlayStyle(
@@ -15,7 +21,17 @@ void main() {
     ),
   );
 
-  runApp(const PeReaderApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        // 全局注入 ReaderSettingsService
+        ChangeNotifierProvider.value(
+          value: readerSettingsService,
+        ),
+      ],
+      child: const PeReaderApp(),
+    ),
+  );
 }
 
 /// PE 阅读器应用根组件

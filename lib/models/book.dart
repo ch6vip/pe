@@ -53,12 +53,37 @@ class Book {
       id: _parseId(json),
       name: _parseString(json, ['book_name', 'name'], '未知书名'),
       author: _parseString(json, ['author'], '未知作者'),
-      coverUrl: _parseString(
-          json, ['thumb_url', 'cover_url', 'coverUrl'], _defaultCoverUrl),
+      coverUrl: _parseString(json, [
+        'thumb_url',
+        'cover_url',
+        'coverUrl',
+      ], _defaultCoverUrl),
       description: _parseString(json, ['abstract', 'description'], '暂无简介'),
       addTime: json['addTime'] as int?,
       lastReadTime: json['lastReadTime'] as int?,
       lastReadChapterTitle: json['lastReadChapterTitle'] as String?,
+    );
+  }
+
+  /// 从搜索API的book_data创建Book实例
+  ///
+  /// 搜索API返回格式：
+  /// ```json
+  /// {
+  ///   "book_id": "123456",
+  ///   "book_name": "书名",
+  ///   "author": "作者",
+  ///   "thumb_url": "封面URL",
+  ///   "abstract": "简介"
+  /// }
+  /// ```
+  factory Book.fromSearchData(Map<String, dynamic> json) {
+    return Book(
+      id: json['book_id']?.toString() ?? '',
+      name: json['book_name']?.toString() ?? '未知书名',
+      author: json['author']?.toString() ?? '未知作者',
+      coverUrl: json['thumb_url']?.toString() ?? _defaultCoverUrl,
+      description: json['abstract']?.toString() ?? '暂无简介',
     );
   }
 

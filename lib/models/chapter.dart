@@ -8,9 +8,17 @@ class Chapter {
   /// 章节标题
   final String title;
 
+  /// 卷名（可选）
+  final String? volumeName;
+
+  /// 章节字数（可选）
+  final int? wordNumber;
+
   const Chapter({
     required this.itemId,
     required this.title,
+    this.volumeName,
+    this.wordNumber,
   });
 
   /// 从 JSON Map 创建 Chapter 实例
@@ -27,6 +35,8 @@ class Chapter {
     return Chapter(
       itemId: rawItemId?.toString() ?? '',
       title: (json['title'] as String?) ?? '未知章节',
+      volumeName: json['volume_name'] as String?,
+      wordNumber: json['chapter_word_number'] as int?,
     );
   }
 
@@ -35,6 +45,8 @@ class Chapter {
     return {
       'item_id': itemId,
       'title': title,
+      if (volumeName != null) 'volume_name': volumeName,
+      if (wordNumber != null) 'chapter_word_number': wordNumber,
     };
   }
 
