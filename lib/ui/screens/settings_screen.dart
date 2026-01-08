@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/reader_settings_service.dart';
+import 'reading_log_screen.dart';
 
 /// 设置页面
 ///
@@ -157,8 +158,10 @@ class SettingsScreen extends StatelessWidget {
           subtitle: const Text('查看阅读足迹与统计'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
-            debugPrint('点击了阅读日志');
-            // TODO: 跳转到阅读日志页面
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ReadingLogScreen()),
+            );
           },
         ),
 
