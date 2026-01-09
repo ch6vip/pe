@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:reader_flutter/controllers/reader_controller.dart';
 import 'package:reader_flutter/models/book.dart';
+import 'package:reader_flutter/services/source_manager_service.dart';
 
 /// 阅读主题配置
 class _ReaderTheme {
@@ -75,7 +76,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => ReaderController(book: widget.book)..initialize(),
+      create: (context) => ReaderController(
+        book: widget.book,
+        sourceManagerService: context.read<SourceManagerService>(),
+      )..initialize(),
       child: Consumer<ReaderController>(
         builder: (context, controller, child) {
           // 监听内容变化，滚动到顶部

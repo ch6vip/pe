@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:reader_flutter/models/book.dart';
+import 'package:reader_flutter/models/book_source.dart';
 import 'package:reader_flutter/services/api_service.dart';
+import 'package:reader_flutter/services/source_manager_service.dart';
 import 'package:reader_flutter/ui/screens/detail_screen.dart';
 
 /// 搜索结果页面
@@ -44,7 +47,20 @@ class _ResultsScreenState extends State<ResultsScreen> {
     });
 
     try {
-      final results = await _apiService.searchBooks(widget.query);
+      final sourceService = context.read<SourceManagerService>();
+      final enabledSources = sourceService.enabledSources;
+
+      if (enabledSources.isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _searchResults = [];
+          _errorMessage = '未启用任何书源，请先在书源管理中启用';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final results = await _searchAcrossSources(enabledSources);
 
       if (!mounted) return;
 
@@ -62,6 +78,17 @@ class _ResultsScreenState extends State<ResultsScreen> {
     }
   }
 
+  Future<List<Book>> _searchAcrossSources(List<BookSource> sources) async {
+    final tasks = sources.map(
+      (source) => _apiService
+          .searchBooks(source, widget.query)
+          .catchError((_) => <Book>[]),
+    );
+
+    final results = await Future.wait(tasks);
+    return results.expand((items) => items).toList();
+  }
+
   /// 跳转到书籍详情
   void _goToBookDetail(Book book) {
     Navigator.push(
@@ -73,10 +100,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('"${widget.query}"的搜索结果'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text('"${widget.query}"的搜索结果'), elevation: 0),
       backgroundColor: Colors.grey.shade100,
       body: _buildBody(),
     );
@@ -105,21 +129,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.grey,
-          ),
+          const Icon(Icons.error_outline, size: 64, color: Colors.grey),
           const SizedBox(height: 16),
           Text(
             _errorMessage!,
             style: const TextStyle(fontSize: 16, color: Colors.grey),
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _searchBooks,
-            child: const Text('重试'),
-          ),
+          ElevatedButton(onPressed: _searchBooks, child: const Text('重试')),
         ],
       ),
     );
@@ -131,11 +148,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.search_off,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           const Text(
             '未找到相关书籍',
@@ -174,10 +187,7 @@ class _BookResultCard extends StatelessWidget {
   final Book book;
   final VoidCallback onTap;
 
-  const _BookResultCard({
-    required this.book,
-    required this.onTap,
-  });
+  const _BookResultCard({required this.book, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -188,9 +198,7 @@ class _BookResultCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
       shadowColor: Colors.black.withAlpha(10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -267,19 +275,13 @@ class _BookResultCard extends StatelessWidget {
               // 作者
               Text(
                 book.author,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 8),
               // 简介
               Text(
                 book.description,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade500,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -307,10 +309,7 @@ class _BookResultCard extends StatelessWidget {
         // 状态文字
         Text(
           isCompleted ? '已完结' : '连载中',
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey.shade700,
-          ),
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
         ),
       ],
     );

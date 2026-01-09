@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:reader_flutter/models/book.dart';
+import 'package:reader_flutter/models/book_source.dart';
 import 'package:reader_flutter/models/chapter.dart';
 import 'package:reader_flutter/models/chapter_content.dart';
 import 'package:reader_flutter/services/api_service.dart';
 import 'package:reader_flutter/services/storage_service.dart';
 import 'package:reader_flutter/services/app_log_service.dart';
+import 'package:reader_flutter/services/source_manager_service.dart';
 
 /// 阅读器控制器
 ///
@@ -17,16 +19,19 @@ class ReaderController extends ChangeNotifier {
   final ApiService _apiService;
   final StorageService _storageService;
   final AppLogService _logService;
+  final SourceManagerService _sourceManagerService;
   final Book book;
 
   ReaderController({
     required this.book,
+    required SourceManagerService sourceManagerService,
     ApiService? apiService,
     StorageService? storageService,
     AppLogService? logService,
-  })  : _apiService = apiService ?? ApiService(),
-        _storageService = storageService ?? StorageService(),
-        _logService = logService ?? AppLogService();
+  }) : _apiService = apiService ?? ApiService(),
+       _storageService = storageService ?? StorageService(),
+       _logService = logService ?? AppLogService(),
+       _sourceManagerService = sourceManagerService;
 
   // ==================== 状态变量 ====================
 
@@ -60,17 +65,46 @@ class ReaderController extends ChangeNotifier {
       notifyListeners();
 
       _logService.info('开始初始化阅读器', tag: 'ReaderController');
-      _logService.debug('书籍ID: ${book.id}, 书名: ${book.name}',
-          tag: 'ReaderController');
+      _logService.debug(
+        '书籍ID: ${book.id}, 书名: ${book.name}',
+        tag: 'ReaderController',
+      );
+
+      final source = _resolveBookSource();
+      if (source == null) {
+        _errorMessage = '书源已被删除或未启用，无法加载章节';
+        _logService.error(
+          '未找到书源：${_getBookSourceKey()}',
+          tag: 'ReaderController',
+        );
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
 
       // 1. 加载章节列表
       try {
-        _chapters = await _apiService.getChapterList(book.id);
-        _logService.info('成功加载章节列表，共${_chapters.length}章',
-            tag: 'ReaderController');
+        final tocUrl = _getBookTocUrl();
+        if (tocUrl.isEmpty) {
+          _errorMessage = '书籍目录地址缺失，无法加载章节';
+          _logService.error('目录地址为空：${book.id}', tag: 'ReaderController');
+          _isLoading = false;
+          notifyListeners();
+          return;
+        }
+
+        _chapters = await _apiService.getChapters(source, tocUrl);
+        _logService.info(
+          '成功加载章节列表，共${_chapters.length}章',
+          tag: 'ReaderController',
+        );
       } catch (e, stackTrace) {
-        _logService.error('加载章节列表失败',
-            error: e, stackTrace: stackTrace, tag: 'ReaderController');
+        _logService.error(
+          '加载章节列表失败',
+          error: e,
+          stackTrace: stackTrace,
+          tag: 'ReaderController',
+        );
 
         // 根据错误类型提供更友好的错误信息
         if (e is ApiException) {
@@ -95,16 +129,22 @@ class ReaderController extends ChangeNotifier {
       // 2. 查找上次阅读位置
       final initialIndex = await _findLastReadChapterIndex();
       _currentChapterIndex = initialIndex;
-      _logService.info('找到上次阅读位置：第${initialIndex + 1}章',
-          tag: 'ReaderController');
+      _logService.info(
+        '找到上次阅读位置：第${initialIndex + 1}章',
+        tag: 'ReaderController',
+      );
 
       // 3. 加载当前章节内容
       await loadChapterContent(initialIndex);
       _logService.info('阅读器初始化完成', tag: 'ReaderController');
     } catch (e, stackTrace) {
       _errorMessage = '初始化失败，请重试';
-      _logService.error('阅读器初始化失败',
-          error: e, stackTrace: stackTrace, tag: 'ReaderController');
+      _logService.error(
+        '阅读器初始化失败',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'ReaderController',
+      );
       _isLoading = false;
       notifyListeners();
     }
@@ -147,6 +187,14 @@ class ReaderController extends ChangeNotifier {
     _currentChapterIndex = index;
     notifyListeners();
 
+    final source = _resolveBookSource();
+    if (source == null) {
+      _errorMessage = '书源已被删除或未启用，无法加载章节';
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
       ChapterContent? content;
 
@@ -166,15 +214,23 @@ class ReaderController extends ChangeNotifier {
         _logService.debug('缓存未命中，从网络请求', tag: 'ReaderController');
 
         try {
-          content = await _apiService.getChapterContent(chapter.itemId);
+          content = await _apiService.getContent(source, chapter.itemId);
+          if (content == null) {
+            throw const ApiException('章节内容为空');
+          }
+
           _currentContent = content;
 
           // 保存到缓存
           await _storageService.saveChapterContent(chapter.itemId, content);
           _logService.debug('章节内容已保存到缓存', tag: 'ReaderController');
         } catch (e, stackTrace) {
-          _logService.error('从网络加载章节失败：${chapter.title}',
-              error: e, stackTrace: stackTrace, tag: 'ReaderController');
+          _logService.error(
+            '从网络加载章节失败：${chapter.title}',
+            error: e,
+            stackTrace: stackTrace,
+            tag: 'ReaderController',
+          );
 
           // 根据错误类型提供更友好的错误信息
           if (e is ApiException) {
@@ -200,8 +256,12 @@ class ReaderController extends ChangeNotifier {
       _logService.info('章节加载完成：${chapter.title}', tag: 'ReaderController');
     } catch (e, stackTrace) {
       _errorMessage = '加载章节时发生未知错误';
-      _logService.error('加载章节失败：${chapter.title}',
-          error: e, stackTrace: stackTrace, tag: 'ReaderController');
+      _logService.error(
+        '加载章节失败：${chapter.title}',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'ReaderController',
+      );
       _isLoading = false;
       notifyListeners();
     }
@@ -219,17 +279,23 @@ class ReaderController extends ChangeNotifier {
     );
     if (hasCache) return;
 
+    final source = _resolveBookSource();
+    if (source == null) return;
+
     try {
       // 延迟一点执行，避免抢占当前章节渲染资源
       await Future.delayed(const Duration(seconds: 1));
 
-      final content = await _apiService.getChapterContent(nextChapter.itemId);
+      final content = await _apiService.getContent(source, nextChapter.itemId);
+      if (content == null) return;
       await _storageService.saveChapterContent(nextChapter.itemId, content);
       _logService.debug('预加载成功: ${nextChapter.title}', tag: 'ReaderController');
     } catch (e) {
       // 预加载失败不干扰用户，仅记录日志
-      _logService.warning('预加载失败: ${nextChapter.title}: $e',
-          tag: 'ReaderController');
+      _logService.warning(
+        '预加载失败: ${nextChapter.title}: $e',
+        tag: 'ReaderController',
+      );
     }
   }
 
@@ -237,10 +303,7 @@ class ReaderController extends ChangeNotifier {
   Future<void> _saveProgress(int chapterIndex) async {
     try {
       final chapterTitle = _chapters[chapterIndex].title;
-      await _storageService.updateReadingProgress(
-        book.id,
-        chapterTitle,
-      );
+      await _storageService.updateReadingProgress(book.id, chapterTitle);
       _logService.debug('阅读进度已保存：$chapterTitle', tag: 'ReaderController');
     } catch (e) {
       // 保存进度失败不应影响阅读体验
@@ -278,6 +341,39 @@ class ReaderController extends ChangeNotifier {
   Future<void> retry() async {
     _logService.info('用户点击重试', tag: 'ReaderController');
     await initialize();
+  }
+
+  BookSource? _resolveBookSource() {
+    final sourceUrl = _getBookSourceKey();
+    if (sourceUrl.isEmpty) return null;
+    return _sourceManagerService.getSourceByUrl(sourceUrl);
+  }
+
+  String _getBookSourceKey() {
+    final dynamicBook = book;
+    if (dynamicBook is dynamic) {
+      final bookSourceUrl = dynamicBook.bookSourceUrl as String?;
+      if (bookSourceUrl != null && bookSourceUrl.trim().isNotEmpty) {
+        return bookSourceUrl.trim();
+      }
+
+      final baseUrl = dynamicBook.baseUrl as String?;
+      if (baseUrl != null && baseUrl.trim().isNotEmpty) {
+        return baseUrl.trim();
+      }
+    }
+    return '';
+  }
+
+  String _getBookTocUrl() {
+    final dynamicBook = book;
+    if (dynamicBook is dynamic) {
+      final tocUrl = dynamicBook.tocUrl as String?;
+      if (tocUrl != null && tocUrl.trim().isNotEmpty) {
+        return tocUrl.trim();
+      }
+    }
+    return '';
   }
 
   /// 获取用户友好的 API 错误信息
