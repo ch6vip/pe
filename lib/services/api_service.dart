@@ -43,6 +43,26 @@ class ApiService {
 
   // ==================== 公共方法 ====================
 
+  /// 获取原始响应（供调试与解析器使用）
+  Future<http.Response> fetchRaw(String url) async {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) {
+      throw const ApiException('URL 不能为空');
+    }
+    try {
+      return await _getWithTimeout(Uri.parse(trimmed));
+    } catch (e, stackTrace) {
+      _logService.error(
+        '获取原始响应失败：$trimmed',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'ApiService',
+      );
+      if (e is ApiException) rethrow;
+      throw ApiException('获取原始响应失败', originalError: e);
+    }
+  }
+
   /// 搜索书籍
   ///
   /// [source] - 书源
@@ -208,24 +228,20 @@ class ApiService {
       List<dynamic>? itemList;
 
       if (data is Map<String, dynamic>) {
-        itemList =
-            (data['item_data_list'] ??
-                    data['item_list'] ??
-                    data['chapter_list'] ??
-                    data['chapters'] ??
-                    data['list'])
-                as List<dynamic>?;
+        itemList = (data['item_data_list'] ??
+            data['item_list'] ??
+            data['chapter_list'] ??
+            data['chapters'] ??
+            data['list']) as List<dynamic>?;
       } else if (data is List) {
         itemList = data;
       }
 
-      itemList ??=
-          (body['item_data_list'] ??
-                  body['item_list'] ??
-                  body['chapter_list'] ??
-                  body['chapters'] ??
-                  body['list'])
-              as List<dynamic>?;
+      itemList ??= (body['item_data_list'] ??
+          body['item_list'] ??
+          body['chapter_list'] ??
+          body['chapters'] ??
+          body['list']) as List<dynamic>?;
 
       if (itemList == null) {
         final responseSummary = _getResponseSummary(body);

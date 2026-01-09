@@ -349,12 +349,20 @@ class BookSource {
       bookSourceGroup: '演示',
       enabled: true,
       lastUpdateTime: now,
-      searchUrl: '/search?q={key}',
+      searchUrl: '/search?key={key}',
       ruleSearch: SearchRule(
         bookList: 'class.book-item@tag.li',
         name: 'text',
         author: 'class.author@text',
         bookUrl: 'tag.a@href',
+      ),
+      ruleBookInfo: BookInfoRule(
+        name: 'text',
+        author: 'class.author@text',
+        intro: 'class.intro@text',
+        kind: 'class.category@text',
+        tocUrl: 'class.chapter@href',
+        coverUrl: 'class.cover@src',
       ),
       ruleToc: TocRule(
         chapterList: 'class.chapter@tag.a',
@@ -363,6 +371,7 @@ class BookSource {
       ),
       ruleContent: ContentRule(
         content: 'id.content@textNodes',
+        title: 'class.chapter-title@text',
       ),
     );
   }

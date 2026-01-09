@@ -1,15 +1,42 @@
 import 'dart:async';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+
 import '../models/book_source.dart';
+import '../services/api_service.dart';
+import '../utils/rule_parser.dart';
 
 /// 书源调试服务
 ///
 /// 提供书源规则的调试功能，通过 Stream 实时输出调试日志
-/// 模拟网络请求并应用规则解析（框架结构，实际解析引擎需后续集成）
 class SourceDebugService {
+  static const String _defaultSearchUrl = '/search?key={key}';
+  static const SearchRule _defaultSearchRule = SearchRule(
+    bookList: 'class.book-item@tag.li',
+    name: 'text',
+    author: 'class.author@text',
+    intro: 'class.intro@text',
+    bookUrl: 'tag.a@href',
+  );
+  static const BookInfoRule _defaultBookInfoRule = BookInfoRule(
+    name: 'text',
+    author: 'class.author@text',
+    intro: 'class.intro@text',
+    kind: 'class.category@text',
+    tocUrl: 'class.chapter@href',
+    coverUrl: 'class.cover@src',
+  );
+  static const TocRule _defaultTocRule = TocRule(
+    chapterList: 'class.chapter@tag.a',
+    chapterName: 'text',
+    chapterUrl: 'href',
+  );
+  static const ContentRule _defaultContentRule = ContentRule(
+    content: 'id.content@textNodes',
+    title: 'class.chapter-title@text',
+  );
+
   final StreamController<String> _logController =
       StreamController<String>.broadcast();
+  final ApiService _apiService = ApiService();
 
   /// 调试日志流
   Stream<String> get logStream => _logController.stream;
@@ -63,21 +90,24 @@ class SourceDebugService {
     _log('🔍 测试关键词：$keyword');
 
     try {
-      // 解析搜索规则
-      final searchRule = _parseSearchRule(source.ruleSearch);
-      _log('📄 解析搜索规则：$searchRule');
+      final searchUrl = source.searchUrl?.trim() ?? _defaultSearchUrl;
+      final rule = _effectiveSearchRule(source.ruleSearch);
+
+      _log(
+        '📄 搜索规则：bookList=${rule.bookList ?? ''}, name=${rule.name ?? ''}, author=${rule.author ?? ''}, url=${rule.bookUrl ?? ''}',
+      );
 
       // 构建搜索URL
-      final searchUrl = _buildSearchUrl(
+      final requestUrl = _buildSearchUrl(
         source.bookSourceUrl,
-        searchRule['searchUrl'] ?? '',
+        searchUrl,
         keyword,
       );
-      _log('🌐 搜索URL：$searchUrl');
+      _log('🌐 搜索URL：$requestUrl');
 
       // 发起请求
       _log('⏳ 正在发起搜索请求...');
-      final response = await _httpGet(searchUrl);
+      final response = await _apiService.fetchRaw(requestUrl);
       _log('📡 响应状态码：${response.statusCode}');
 
       if (response.statusCode == 200) {
@@ -87,7 +117,7 @@ class SourceDebugService {
         );
 
         // 解析搜索结果
-        final results = await _parseSearchResults(response.body, searchRule);
+        final results = await _parseSearchResults(response.body, rule);
         _log('📚 解析到 ${results.length} 个搜索结果');
 
         // 显示前3个结果
@@ -98,7 +128,7 @@ class SourceDebugService {
           _log('    🔗 详情链接：${result['url']}');
         }
       } else {
-        _log('❌ 请求失败：${response.reasonPhrase}');
+        _log('❌ 请求失败');
       }
     } catch (e) {
       _log('❌ 搜索测试失败：$e');
@@ -127,12 +157,15 @@ class SourceDebugService {
 
       // 发起详情页请求
       _log('⏳ 正在获取详情页...');
-      final response = await _httpGet(fullUrl);
+      final response = await _apiService.fetchRaw(fullUrl);
       _log('📡 响应状态码：${response.statusCode}');
 
       if (response.statusCode == 200) {
         // 解析详情信息
-        final detail = await _parseDetailInfo(response.body);
+        final detail = await _parseDetailInfo(
+          response.body,
+          source.ruleBookInfo,
+        );
         _log('✅ 详情解析成功：');
         _log('  📚 书名：${detail['name'] ?? '未解析到'}');
         _log('  ✍️ 作者：${detail['author'] ?? '未解析到'}');
@@ -143,13 +176,13 @@ class SourceDebugService {
         _log('  🏷️ 分类：${detail['category'] ?? '未解析到'}');
 
         // Step 3: 目录测试
-        if (detail['chapterUrl'] != null) {
+        if (detail['chapterUrl'] != null && detail['chapterUrl']!.isNotEmpty) {
           await _debugChapter(source, detail['chapterUrl']!);
         } else {
           _log('⚠️ 未找到章节链接，跳过目录测试');
         }
       } else {
-        _log('❌ 详情页请求失败：${response.reasonPhrase}');
+        _log('❌ 详情页请求失败');
       }
     } catch (e) {
       _log('❌ 详情测试失败：$e');
@@ -168,14 +201,14 @@ class SourceDebugService {
 
       // 发起目录页请求
       _log('⏳ 正在获取目录页...');
-      final response = await _httpGet(fullUrl);
+      final response = await _apiService.fetchRaw(fullUrl);
       _log('📡 响应状态码：${response.statusCode}');
 
       if (response.statusCode == 200) {
         // 解析章节列表
         final chapters = await _parseChapterList(
           response.body,
-          _encodeRuleJson(source.ruleToc?.toJson()),
+          source.ruleToc,
         );
         _log('✅ 目录解析成功，共 ${chapters.length} 个章节');
 
@@ -192,7 +225,7 @@ class SourceDebugService {
           await _debugContent(source, chapters.first['url']!);
         }
       } else {
-        _log('❌ 目录页请求失败：${response.reasonPhrase}');
+        _log('❌ 目录页请求失败');
       }
     } catch (e) {
       _log('❌ 目录测试失败：$e');
@@ -211,22 +244,26 @@ class SourceDebugService {
 
       // 发起正文页请求
       _log('⏳ 正在获取正文页...');
-      final response = await _httpGet(fullUrl);
+      final response = await _apiService.fetchRaw(fullUrl);
       _log('📡 响应状态码：${response.statusCode}');
 
       if (response.statusCode == 200) {
         // 解析正文内容
         final content = await _parseContent(
           response.body,
-          _encodeRuleJson(source.ruleContent?.toJson()),
+          source.ruleContent,
         );
+        if (content.isEmpty) {
+          _log('⚠️ 正文解析为空');
+          return;
+        }
         _log('✅ 正文解析成功');
         _log(
           '📄 正文内容前100字：${content.substring(0, content.length > 100 ? 100 : content.length)}...',
         );
         _log('📊 正文总长度：${content.length} 字符');
       } else {
-        _log('❌ 正文页请求失败：${response.reasonPhrase}');
+        _log('❌ 正文页请求失败');
       }
     } catch (e) {
       _log('❌ 正文测试失败：$e');
@@ -241,16 +278,16 @@ class SourceDebugService {
     String keyword,
   ) async {
     try {
-      final searchRule = _parseSearchRule(source.ruleSearch);
-      final searchUrl = _buildSearchUrl(
+      final searchUrl = source.searchUrl?.trim() ?? _defaultSearchUrl;
+      final requestUrl = _buildSearchUrl(
         source.bookSourceUrl,
-        searchRule['searchUrl'] ?? '',
+        searchUrl,
         keyword,
       );
-      final response = await _httpGet(searchUrl);
+      final response = await _apiService.fetchRaw(requestUrl);
 
       if (response.statusCode == 200) {
-        return await _parseSearchResults(response.body, searchRule);
+        return await _parseSearchResults(response.body, source.ruleSearch);
       }
     } catch (e) {
       _log('搜索执行失败：$e');
@@ -258,37 +295,10 @@ class SourceDebugService {
     return [];
   }
 
-  /// 解析搜索规则
-  Map<String, dynamic> _parseSearchRule(SearchRule? rule) {
-    try {
-      final jsonString = _encodeRuleJson(rule?.toJson());
-      if (jsonString.isEmpty) {
-        throw const FormatException('empty rule');
-      }
-      return json.decode(jsonString) as Map<String, dynamic>;
-    } catch (e) {
-      _log('⚠️ 搜索规则解析失败，使用默认规则：$e');
-      return {
-        'searchUrl': '/search?q={key}',
-        'ruleList': 'class.book-item',
-        'bookName': 'text',
-        'bookAuthor': 'text',
-        'bookUrl': 'href',
-      };
-    }
-  }
-
   /// 构建搜索URL
   String _buildSearchUrl(String baseUrl, String searchUrl, String keyword) {
     final url = searchUrl.replaceAll('{key}', Uri.encodeComponent(keyword));
     return _buildFullUrl(baseUrl, url);
-  }
-
-  String _encodeRuleJson(Map<String, dynamic>? json) {
-    if (json == null || json.isEmpty) {
-      return '';
-    }
-    return jsonEncode(json);
   }
 
   /// 构建完整URL
@@ -308,84 +318,104 @@ class SourceDebugService {
     return baseUri.resolve(relativeUrl).toString();
   }
 
-  /// HTTP GET 请求
-  Future<http.Response> _httpGet(String url) async {
-    final headers = {
-      'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-      'Accept':
-          'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-    };
-
-    return await http.get(Uri.parse(url), headers: headers).timeout(
-          const Duration(seconds: 30),
-          onTimeout: () => throw TimeoutException('请求超时'),
-        );
+  SearchRule _effectiveSearchRule(SearchRule? rule) {
+    return rule ?? _defaultSearchRule;
   }
 
-  /// 解析搜索结果（模拟实现）
+  BookInfoRule _effectiveBookInfoRule(BookInfoRule? rule) {
+    return rule ?? _defaultBookInfoRule;
+  }
+
+  TocRule _effectiveTocRule(TocRule? rule) {
+    return rule ?? _defaultTocRule;
+  }
+
+  ContentRule _effectiveContentRule(ContentRule? rule) {
+    return rule ?? _defaultContentRule;
+  }
+
+  /// 解析搜索结果
   Future<List<Map<String, String>>> _parseSearchResults(
-    String html,
-    Map<String, dynamic> rule,
+    String raw,
+    SearchRule? rule,
   ) async {
-    // TODO: 此处需集成 JS/XPath/Regex 解析引擎
-    // 目前返回模拟数据
-    _log('🔧 使用模拟解析器（需集成真实的 JS/XPath/Regex 解析引擎）');
+    final parser = RuleParser.from(raw);
+    final effectiveRule = _effectiveSearchRule(rule);
+    final items = parser.selectList(effectiveRule.bookList);
+    final results = <Map<String, String>>[];
 
-    return [
-      {
-        'name': '模拟书籍1',
-        'author': '模拟作者1',
-        'url': '/book/12345',
-        'description': '这是一本模拟的书籍描述',
-      },
-      {
-        'name': '模拟书籍2',
-        'author': '模拟作者2',
-        'url': '/book/67890',
-        'description': '这是另一本模拟的书籍描述',
-      },
-    ];
+    for (final item in items) {
+      final name =
+          parser.selectString(effectiveRule.name, context: item).trim();
+      final author =
+          parser.selectString(effectiveRule.author, context: item).trim();
+      final url =
+          parser.selectString(effectiveRule.bookUrl, context: item).trim();
+      final intro =
+          parser.selectString(effectiveRule.intro, context: item).trim();
+
+      if (name.isEmpty && author.isEmpty && url.isEmpty && intro.isEmpty) {
+        continue;
+      }
+
+      results.add({
+        'name': name,
+        'author': author,
+        'url': url,
+        'description': intro,
+      });
+    }
+
+    return results;
   }
 
-  /// 解析详情信息（模拟实现）
-  Future<Map<String, String?>> _parseDetailInfo(String html) async {
-    // TODO: 此处需集成 JS/XPath/Regex 解析引擎
-    _log('🔧 使用模拟解析器（需集成真实的 JS/XPath/Regex 解析引擎）');
+  /// 解析详情信息
+  Future<Map<String, String?>> _parseDetailInfo(
+    String raw,
+    BookInfoRule? rule,
+  ) async {
+    final parser = RuleParser.from(raw);
+    final effectiveRule = _effectiveBookInfoRule(rule);
 
     return {
-      'name': '模拟书名',
-      'author': '模拟作者',
-      'description': '这是一本模拟的书籍详细描述，包含了更多的内容信息。',
-      'category': '小说',
-      'chapterUrl': '/book/12345/chapters',
+      'name': parser.selectString(effectiveRule.name),
+      'author': parser.selectString(effectiveRule.author),
+      'description': parser.selectString(effectiveRule.intro),
+      'category': parser.selectString(effectiveRule.kind),
+      'chapterUrl': parser.selectString(effectiveRule.tocUrl),
+      'coverUrl': parser.selectString(effectiveRule.coverUrl),
     };
   }
 
-  /// 解析章节列表（模拟实现）
+  /// 解析章节列表
   Future<List<Map<String, String>>> _parseChapterList(
-    String html,
-    String ruleJson,
+    String raw,
+    TocRule? rule,
   ) async {
-    // TODO: 此处需集成 JS/XPath/Regex 解析引擎
-    _log('🔧 使用模拟解析器（需集成真实的 JS/XPath/Regex 解析引擎）');
+    final parser = RuleParser.from(raw);
+    final effectiveRule = _effectiveTocRule(rule);
+    final items = parser.selectList(effectiveRule.chapterList);
+    final results = <Map<String, String>>[];
 
-    return List.generate(
-      20,
-      (index) => {
-        'name': '第${index + 1}章 模拟章节',
-        'url': '/chapter/${index + 1}',
-      },
-    );
+    for (final item in items) {
+      final name =
+          parser.selectString(effectiveRule.chapterName, context: item).trim();
+      final url =
+          parser.selectString(effectiveRule.chapterUrl, context: item).trim();
+      if (name.isEmpty && url.isEmpty) {
+        continue;
+      }
+      results.add({'name': name, 'url': url});
+    }
+
+    return results;
   }
 
-  /// 解析正文内容（模拟实现）
-  Future<String> _parseContent(String html, String ruleJson) async {
-    // TODO: 此处需集成 JS/XPath/Regex 解析引擎
-    _log('🔧 使用模拟解析器（需集成真实的 JS/XPath/Regex 解析引擎）');
-
-    return '这是模拟的正文内容。在实际实现中，这里会根据规则解析出真实的章节正文内容。正文可能包含多个段落，每个段落都有丰富的内容，为读者提供沉浸式的阅读体验。这个模拟内容足够长，可以用来测试解析器的功能和性能。';
+  /// 解析正文内容
+  Future<String> _parseContent(String raw, ContentRule? rule) async {
+    final parser = RuleParser.from(raw);
+    final effectiveRule = _effectiveContentRule(rule);
+    return parser.selectString(effectiveRule.content).trim();
   }
 
   /// 输出日志
@@ -404,6 +434,7 @@ class SourceDebugService {
 
   /// 清理资源
   void dispose() {
+    _apiService.dispose();
     _logController.close();
   }
 }
