@@ -28,10 +28,10 @@ class ReaderController extends ChangeNotifier {
     ApiService? apiService,
     StorageService? storageService,
     AppLogService? logService,
-  }) : _apiService = apiService ?? ApiService(),
-       _storageService = storageService ?? StorageService(),
-       _logService = logService ?? AppLogService(),
-       _sourceManagerService = sourceManagerService;
+  })  : _apiService = apiService ?? ApiService(),
+        _storageService = storageService ?? StorageService(),
+        _logService = logService ?? AppLogService(),
+        _sourceManagerService = sourceManagerService;
 
   // ==================== 状态变量 ====================
 
@@ -72,7 +72,7 @@ class ReaderController extends ChangeNotifier {
 
       final source = _resolveBookSource();
       if (source == null) {
-        _errorMessage = '书源已被删除或未启用，无法加载章节';
+        _errorMessage = '书源已失效';
         _logService.error(
           '未找到书源：${_getBookSourceKey()}',
           tag: 'ReaderController',
@@ -189,7 +189,7 @@ class ReaderController extends ChangeNotifier {
 
     final source = _resolveBookSource();
     if (source == null) {
-      _errorMessage = '书源已被删除或未启用，无法加载章节';
+      _errorMessage = '书源已失效';
       _isLoading = false;
       notifyListeners();
       return;
@@ -215,10 +215,6 @@ class ReaderController extends ChangeNotifier {
 
         try {
           content = await _apiService.getContent(source, chapter.itemId);
-          if (content == null) {
-            throw const ApiException('章节内容为空');
-          }
-
           _currentContent = content;
 
           // 保存到缓存
@@ -287,7 +283,6 @@ class ReaderController extends ChangeNotifier {
       await Future.delayed(const Duration(seconds: 1));
 
       final content = await _apiService.getContent(source, nextChapter.itemId);
-      if (content == null) return;
       await _storageService.saveChapterContent(nextChapter.itemId, content);
       _logService.debug('预加载成功: ${nextChapter.title}', tag: 'ReaderController');
     } catch (e) {
@@ -350,30 +345,19 @@ class ReaderController extends ChangeNotifier {
   }
 
   String _getBookSourceKey() {
-    final dynamicBook = book;
-    if (dynamicBook is dynamic) {
-      final bookSourceUrl = dynamicBook.bookSourceUrl as String?;
-      if (bookSourceUrl != null && bookSourceUrl.trim().isNotEmpty) {
-        return bookSourceUrl.trim();
-      }
-
-      final baseUrl = dynamicBook.baseUrl as String?;
-      if (baseUrl != null && baseUrl.trim().isNotEmpty) {
-        return baseUrl.trim();
-      }
+    final sourceUrl = book.bookSourceUrl?.trim();
+    if (sourceUrl == null || sourceUrl.isEmpty) {
+      return '';
     }
-    return '';
+    return sourceUrl;
   }
 
   String _getBookTocUrl() {
-    final dynamicBook = book;
-    if (dynamicBook is dynamic) {
-      final tocUrl = dynamicBook.tocUrl as String?;
-      if (tocUrl != null && tocUrl.trim().isNotEmpty) {
-        return tocUrl.trim();
-      }
+    final tocUrl = book.efficientTocUrl.trim();
+    if (tocUrl.isEmpty) {
+      return '';
     }
-    return '';
+    return tocUrl;
   }
 
   /// 获取用户友好的 API 错误信息

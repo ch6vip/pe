@@ -17,6 +17,15 @@ class Book {
   /// 书籍简介
   final String description;
 
+  /// 书源唯一标识（BookSource.bookSourceUrl）
+  final String? bookSourceUrl;
+
+  /// 目录页 URL（Legado 格式）
+  final String? tocUrl;
+
+  /// 书源名称（用于展示）
+  final String? originName;
+
   /// 添加到书架的时间（Unix 时间戳，毫秒）
   final int? addTime;
 
@@ -36,6 +45,9 @@ class Book {
     required this.author,
     required this.coverUrl,
     required this.description,
+    this.bookSourceUrl,
+    this.tocUrl,
+    this.originName,
     this.addTime,
     this.lastReadTime,
     this.lastReadChapterTitle,
@@ -59,6 +71,9 @@ class Book {
         'coverUrl',
       ], _defaultCoverUrl),
       description: _parseString(json, ['abstract', 'description'], '暂无简介'),
+      bookSourceUrl: json['bookSourceUrl'] as String?,
+      tocUrl: json['tocUrl'] as String?,
+      originName: json['originName'] as String?,
       addTime: json['addTime'] as int?,
       lastReadTime: json['lastReadTime'] as int?,
       lastReadChapterTitle: json['lastReadChapterTitle'] as String?,
@@ -84,6 +99,9 @@ class Book {
       author: json['author']?.toString() ?? '未知作者',
       coverUrl: json['thumb_url']?.toString() ?? _defaultCoverUrl,
       description: json['abstract']?.toString() ?? '暂无简介',
+      bookSourceUrl: json['bookSourceUrl'] as String?,
+      tocUrl: json['tocUrl'] as String?,
+      originName: json['originName'] as String?,
     );
   }
 
@@ -116,6 +134,9 @@ class Book {
       'author': author,
       'coverUrl': coverUrl,
       'description': description,
+      'bookSourceUrl': bookSourceUrl,
+      'tocUrl': tocUrl,
+      'originName': originName,
       'addTime': addTime,
       'lastReadTime': lastReadTime,
       'lastReadChapterTitle': lastReadChapterTitle,
@@ -131,6 +152,9 @@ class Book {
     String? author,
     String? coverUrl,
     String? description,
+    String? bookSourceUrl,
+    String? tocUrl,
+    String? originName,
     int? addTime,
     int? lastReadTime,
     String? lastReadChapterTitle,
@@ -141,11 +165,17 @@ class Book {
       author: author ?? this.author,
       coverUrl: coverUrl ?? this.coverUrl,
       description: description ?? this.description,
+      bookSourceUrl: bookSourceUrl ?? this.bookSourceUrl,
+      tocUrl: tocUrl ?? this.tocUrl,
+      originName: originName ?? this.originName,
       addTime: addTime ?? this.addTime,
       lastReadTime: lastReadTime ?? this.lastReadTime,
       lastReadChapterTitle: lastReadChapterTitle ?? this.lastReadChapterTitle,
     );
   }
+
+  /// 兼容缺失 tocUrl 的情况
+  String get efficientTocUrl => tocUrl ?? id;
 
   @override
   bool operator ==(Object other) {
