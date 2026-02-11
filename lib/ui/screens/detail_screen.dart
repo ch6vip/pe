@@ -43,7 +43,11 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   /// 添加书籍到书架
+  ///
+  /// 防止重复添加，提供操作状态反馈
+  /// 使用 finally 确保操作状态总是被重置
   Future<void> _addToBookshelf() async {
+    // 防止重复操作
     if (_isBookInShelf || _isOperating) return;
 
     setState(() {
@@ -60,36 +64,33 @@ class _DetailScreenState extends State<DetailScreen> {
           _isBookInShelf = true;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('已加入书架'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        _showSnackBar('已加入书架');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('书籍已在书架中'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        _showSnackBar('书籍已在书架中');
       }
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('加入书架失败，请稍后重试'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      _showSnackBar('加入书架失败，请稍后重试');
     } finally {
+      // 确保操作状态总是被重置
       if (mounted) {
         setState(() {
           _isOperating = false;
         });
       }
     }
+  }
+
+  /// 显示 SnackBar 提示
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   /// 开始阅读
