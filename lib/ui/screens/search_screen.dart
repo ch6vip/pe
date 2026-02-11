@@ -27,22 +27,27 @@ class _SearchScreenState extends State<SearchScreen>
   }
 
   /// 执行搜索
+  ///
+  /// 验证搜索输入，收起键盘，然后导航到搜索结果页面
   void _performSearch() {
     final query = _searchController.text.trim();
 
+    // 验证输入
     if (query.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('请输入搜索内容'),
           duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
 
-    // 收起键盘
+    // 收起键盘，提升用户体验
     _searchFocusNode.unfocus();
 
+    // 导航到搜索结果页面
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => ResultsScreen(query: query)),
