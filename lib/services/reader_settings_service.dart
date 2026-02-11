@@ -102,8 +102,9 @@ class ReaderSettingsService extends ChangeNotifier {
   /// 更新字体大小
   ///
   /// [value] 字体大小，范围建议 12.0 - 30.0
+  /// 超出范围的值会被限制在有效范围内
   void updateFontSize(double value) {
-    _fontSize = value;
+    _fontSize = value.clamp(12.0, 30.0);
     notifyListeners();
     _saveSettings();
   }
@@ -111,8 +112,9 @@ class ReaderSettingsService extends ChangeNotifier {
   /// 更新行高
   ///
   /// [value] 行高倍数，范围建议 1.2 - 2.5
+  /// 超出范围的值会被限制在有效范围内
   void updateLineHeight(double value) {
-    _lineHeight = value;
+    _lineHeight = value.clamp(1.2, 2.5);
     notifyListeners();
     _saveSettings();
   }
