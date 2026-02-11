@@ -70,6 +70,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   @override
   void dispose() {
+    // 释放 PageController，防止内存泄漏
     _pageController.dispose();
     super.dispose();
   }
