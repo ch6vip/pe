@@ -21,6 +21,7 @@ class _SearchScreenState extends State<SearchScreen>
 
   @override
   void dispose() {
+    // 释放资源，防止内存泄漏
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
