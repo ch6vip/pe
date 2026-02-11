@@ -1,17 +1,17 @@
-/// 章节数据模型
+/// Chapter data model
 ///
-/// 用于表示小说的章节信息，包含章节标识和标题
+/// Represents chapter information for a novel, including ID and title
 class Chapter {
-  /// 章节唯一标识符
+  /// Unique chapter identifier
   final String itemId;
 
-  /// 章节标题
+  /// Chapter title
   final String title;
 
-  /// 卷名（可选）
+  /// Volume name (optional)
   final String? volumeName;
 
-  /// 章节字数（可选）
+  /// Word count (optional)
   final int? wordNumber;
 
   const Chapter({
