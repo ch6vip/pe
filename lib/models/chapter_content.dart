@@ -1,14 +1,14 @@
-/// 章节内容数据模型
+/// Chapter content data model
 ///
-/// 用于表示小说章节的具体内容，包含标题和正文
+/// Represents the actual content of a novel chapter, including title and body text
 class ChapterContent {
-  /// 章节标题
+  /// Chapter title
   final String title;
 
-  /// 章节正文内容（已处理过的纯文本）
+  /// Chapter body content (processed plain text)
   final String content;
 
-  /// 章节ID（可选）
+  /// Chapter ID (optional)
   final String? itemId;
 
   /// HTML 段落起始标签正则（如 <p>, <p class="...">）
