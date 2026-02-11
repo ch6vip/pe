@@ -264,6 +264,9 @@ class ReaderController extends ChangeNotifier {
   }
 
   /// 预加载下一章
+  ///
+  /// 异步加载下一章内容到缓存，提升用户切换章节时的响应速度
+  /// 预加载采用静默方式，失败不影响当前阅读体验
   Future<void> _preloadNextChapter(int currentIndex) async {
     if (currentIndex >= _chapters.length - 1) return;
 
@@ -273,10 +276,16 @@ class ReaderController extends ChangeNotifier {
     final hasCache = await _storageService.hasChapterContent(
       nextChapter.itemId,
     );
-    if (hasCache) return;
+    if (hasCache) {
+      _logService.debug('下一章已缓存，跳过预加载', tag: 'ReaderController');
+      return;
+    }
 
     final source = _resolveBookSource();
-    if (source == null) return;
+    if (source == null) {
+      _logService.warning('书源失效，无法预加载', tag: 'ReaderController');
+      return;
+    }
 
     try {
       // 延迟一点执行，避免抢占当前章节渲染资源
@@ -284,11 +293,13 @@ class ReaderController extends ChangeNotifier {
 
       final content = await _apiService.getContent(source, nextChapter.itemId);
       await _storageService.saveChapterContent(nextChapter.itemId, content);
-      _logService.debug('预加载成功: ${nextChapter.title}', tag: 'ReaderController');
-    } catch (e) {
+      _logService.info('预加载成功: ${nextChapter.title}', tag: 'ReaderController');
+    } catch (e, stackTrace) {
       // 预加载失败不干扰用户，仅记录日志
       _logService.warning(
-        '预加载失败: ${nextChapter.title}: $e',
+        '预加载失败: ${nextChapter.title}',
+        error: e,
+        stackTrace: stackTrace,
         tag: 'ReaderController',
       );
     }
