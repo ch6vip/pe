@@ -6,29 +6,29 @@ import 'package:reader_flutter/models/chapter.dart';
 import 'package:reader_flutter/models/chapter_content.dart';
 import 'package:reader_flutter/services/app_log_service.dart';
 
-/// API 请求异常
+/// API request exception
 ///
-/// 用于封装 API 调用过程中的错误信息
+/// Encapsulates error information during API calls
 class ApiException implements Exception {
-  /// 错误消息
+  /// Error message
   final String message;
 
-  /// HTTP 状态码（如果有）
+  /// HTTP status code if any
   final int? statusCode;
 
-  /// 原始异常（如果有）
+  /// Original exception if any
   final Object? originalError;
 
   const ApiException(this.message, {this.statusCode, this.originalError});
 
   @override
   String toString() =>
-      'ApiException: $message${statusCode != null ? ' (状态码: $statusCode)' : ''}';
+      'ApiException: $message${statusCode != null ? ' (status code: $statusCode)' : ''}';
 }
 
-/// API 服务类
+/// API service class
 ///
-/// 负责与后端 API 进行通信，提供书籍搜索、详情、章节列表和章节内容的获取功能
+/// Handles communication with backend API, providing book search, details, chapter list and content retrieval
 class ApiService {
   /// HTTP 请求超时时间
   static const Duration _requestTimeout = Duration(seconds: 15);
