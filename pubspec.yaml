@@ -1,6 +1,6 @@
 name: reader_flutter
-description: "A new Flutter project."
-publish_to: 'none' 
+description: "一款基于 Flutter 开发的跨平台小说阅读器应用，支持多书源管理和自定义阅读设置。"
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
