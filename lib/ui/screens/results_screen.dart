@@ -34,6 +34,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   void initState() {
     super.initState();
+    // 页面加载时立即执行搜索
     _searchBooks();
   }
 
