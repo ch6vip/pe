@@ -20,12 +20,51 @@
 
 ## 技术栈
 
-- **框架**: Flutter
-- **语言**: Dart
-- **状态管理**: `setState` (为保持简单)
-- **UI**: Flutter Material 组件
-- **HTTP客户端**: `http` 包
-- **本地存储**: `shared_preferences`
+| 类别 | 技术 | 版本 |
+|------|------|------|
+| **框架** | Flutter | >= 3.19.0 |
+| **语言** | Dart | >= 3.4.3 |
+| **状态管理** | Provider | ^6.1.5+1 |
+| **UI框架** | Material Design 3 | - |
+| **HTTP客户端** | http | ^1.2.1 |
+| **本地存储** | shared_preferences | ^2.2.3 |
+| **HTML解析** | html | ^0.15.4 |
+| **JSON路径** | json_path | ^0.7.1 |
+
+## 项目结构
+
+```
+lib/
+├── models/              # 数据模型
+│   ├── book.dart                 # 书籍模型
+│   ├── book_source.dart          # 书源模型
+│   ├── chapter.dart              # 章节模型
+│   └── chapter_content.dart      # 章节内容模型
+├── services/            # 服务层
+│   ├── api_service.dart          # API请求服务
+│   ├── app_log_service.dart      # 日志服务
+│   ├── reader_settings_service.dart    # 阅读设置服务
+│   ├── source_manager_service.dart     # 书源管理服务
+│   └── storage_service.dart      # 存储服务
+├── controllers/          # 控制器层
+│   └── reader_controller.dart  # 阅读器控制器
+├── utils/               # 工具类
+│   └── rule_parser.dart       # 规则解析器
+└── ui/                  # UI层
+    ├── screens/               # 页面
+    │   ├── search_screen.dart         # 搜索页
+    │   ├── results_screen.dart        # 搜索结果页
+    │   ├── detail_screen.dart         # 书籍详情页
+    │   ├── bookshelf_screen.dart      # 书架页
+    │   ├── reader_screen.dart        # 阅读器页
+    │   ├── settings_screen.dart      # 设置页
+    │   ├── source_management_screen.dart   # 书源管理
+    │   ├── source_edit_screen.dart         # 书源编辑
+    │   ├── source_debug_screen.dart        # 书源调试
+    │   └── app_log_screen.dart             # 应用日志
+    ├── widgets/              # 通用组件
+    └── main_scaffold.dart    # 主脚手架
+```
 
 ## 主要功能
 
