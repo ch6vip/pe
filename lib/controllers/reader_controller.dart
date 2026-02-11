@@ -8,13 +8,13 @@ import 'package:reader_flutter/services/storage_service.dart';
 import 'package:reader_flutter/services/app_log_service.dart';
 import 'package:reader_flutter/services/source_manager_service.dart';
 
-/// 阅读器控制器
+/// Reader controller
 ///
-/// 负责管理阅读器的业务逻辑，包括：
-/// - 章节列表加载
-/// - 章节内容加载（支持缓存优先）
-/// - 预加载下一章
-/// - 阅读进度管理
+/// Manages reader business logic, including:
+/// - Chapter list loading
+/// - Chapter content loading (cache-first strategy)
+/// - Next chapter preloading
+/// - Reading progress management
 class ReaderController extends ChangeNotifier {
   final ApiService _apiService;
   final StorageService _storageService;
