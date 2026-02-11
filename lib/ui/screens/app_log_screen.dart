@@ -67,6 +67,11 @@ class _AppLogScreenState extends State<AppLogScreen>
   }
 
   /// 获取筛选后的日志
+  ///
+  /// 支持按级别和关键词组合筛选
+  /// - 级别筛选：只显示指定级别的日志
+  /// - 关键词筛选：搜索消息和标签中的文本
+  /// - 搜索不区分大小写
   List<LogEntry> get _filteredLogs {
     var logs = _logService.logs;
 
@@ -75,13 +80,12 @@ class _AppLogScreenState extends State<AppLogScreen>
       logs = logs.where((log) => log.level == _selectedLevel).toList();
     }
 
-    // 按关键词搜索
+    // 按关键词搜索（不区分大小写）
     if (_searchKeyword.isNotEmpty) {
+      final keyword = _searchKeyword.toLowerCase();
       logs = logs.where((log) {
-        return log.message
-                .toLowerCase()
-                .contains(_searchKeyword.toLowerCase()) ||
-            log.tag.toLowerCase().contains(_searchKeyword.toLowerCase());
+        return log.message.toLowerCase().contains(keyword) ||
+            log.tag.toLowerCase().contains(keyword);
       }).toList();
     }
 
