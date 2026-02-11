@@ -433,16 +433,26 @@ class ApiService {
   }
 
   /// 带超时的 GET 请求，包含简单的重试机制和重定向跟随
+  ///
+  /// [uri] - 请求的 URI
+  /// [retries] - 重试次数，默认为 2
+  ///
+  /// 特性：
+  /// - 15 秒请求超时
+  /// - 失败自动重试（指数退避）
+  /// - 自动跟随 301/302 重定向
   Future<http.Response> _getWithTimeout(Uri uri, {int retries = 2}) async {
     int attempts = 0;
     while (true) {
       try {
         final response = await _client.get(uri).timeout(_requestTimeout);
 
+        // 处理 HTTP 重定向
         if (response.statusCode == 301 || response.statusCode == 302) {
           final location = response.headers['location'];
           if (location != null) {
             final redirectUri = Uri.parse(location);
+            // 处理相对路径重定向
             if (!redirectUri.hasScheme) {
               return await _getWithTimeout(
                 uri.replace(
@@ -465,6 +475,7 @@ class ApiService {
           _logService.error('网络请求失败（重试超时）：$uri', error: e, tag: 'ApiService');
           throw ApiException('网络请求失败: $uri', originalError: e);
         }
+        // 指数退避：每次重试等待时间递增
         await Future.delayed(Duration(milliseconds: 500 * attempts));
       }
     }
