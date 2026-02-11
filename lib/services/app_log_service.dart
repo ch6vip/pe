@@ -54,18 +54,26 @@ class AppLogService {
   }
 
   /// 添加警告日志
-  void warning(String message, {String? tag}) {
+  void warning(String message,
+      {Object? error, StackTrace? stackTrace, String? tag}) {
+    final buffer = StringBuffer(message);
+    if (error != null) {
+      buffer.write(': $error');
+    }
+    if (stackTrace != null) {
+      buffer.write('\n$stackTrace');
+    }
+
     _addLog(LogEntry(
       level: LogLevel.warning,
-      message: message,
+      message: buffer.toString(),
       tag: tag ?? 'Warning',
       timestamp: DateTime.now(),
     ));
     if (kDebugMode) {
-      debugPrint('[$tag] $message');
+      debugPrint('[$tag] $buffer');
     }
   }
-
   /// 添加错误日志
   void error(String message,
       {Object? error, StackTrace? stackTrace, String? tag}) {
