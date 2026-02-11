@@ -4,13 +4,26 @@ import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:json_path/json_path.dart';
 
+/// 规则解析器
+///
+/// 支持 JSON 和 HTML 两种格式的规则解析
+/// 用于书源规则中的数据提取
 class RuleParser {
+  /// 是否为 JSON 格式
   final bool isJson;
+
+  /// JSON 根节点（仅 JSON 格式使用）
   final dynamic _jsonRoot;
+
+  /// HTML 文档对象（仅 HTML 格式使用）
   final dom.Document? _document;
 
   RuleParser._(this.isJson, this._jsonRoot, this._document);
 
+  /// 从原始字符串创建解析器
+  ///
+  /// 自动检测输入是 JSON 还是 HTML，并选择对应的解析方式
+  /// JSON 检测：以 { 或 [ 开头
   factory RuleParser.from(String raw) {
     final trimmed = raw.trimLeft();
     if (_looksLikeJson(trimmed)) {
