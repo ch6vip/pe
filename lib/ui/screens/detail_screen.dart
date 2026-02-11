@@ -28,6 +28,7 @@ class _DetailScreenState extends State<DetailScreen> {
   @override
   void initState() {
     super.initState();
+    // 页面加载时检查书籍是否已在书架中
     _checkIfBookInShelf();
   }
 
