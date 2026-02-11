@@ -78,14 +78,22 @@ class _ResultsScreenState extends State<ResultsScreen> {
     }
   }
 
+  /// 跨多个书源搜索书籍
+  ///
+  /// 并发查询所有启用的书源，收集所有搜索结果
+  /// 单个书源失败不影响其他书源的搜索
   Future<List<Book>> _searchAcrossSources(List<BookSource> sources) async {
+    // 为每个书源创建搜索任务
     final tasks = sources.map(
       (source) => _apiService
           .searchBooks(source, widget.query)
-          .catchError((_) => <Book>[]),
+          .catchError((_) => <Book>[], test: (_) => true), // 单个失败不影响整体
     );
 
+    // 等待所有搜索任务完成
     final results = await Future.wait(tasks);
+
+    // 合并所有搜索结果
     return results.expand((items) => items).toList();
   }
 
