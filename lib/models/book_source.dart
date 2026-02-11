@@ -341,21 +341,30 @@ class BookSource {
   }
 
   /// 创建默认的演示书源
+  ///
+  /// 提供一个功能完整的示例书源，用于演示和测试应用功能
+  /// 用户可以参考此结构创建自己的书源
   static BookSource createDemoSource() {
     final now = DateTime.now().millisecondsSinceEpoch;
     return BookSource(
       bookSourceUrl: 'https://www.example.com',
       bookSourceName: '演示书源',
       bookSourceGroup: '演示',
+      bookSourceType: 0,
       enabled: true,
+      enabledExplore: true,
       lastUpdateTime: now,
+      respondTime: 180000,
+      weight: 0,
       searchUrl: '/search?key={key}',
+      // 搜索规则配置
       ruleSearch: SearchRule(
         bookList: 'class.book-item@tag.li',
         name: 'text',
         author: 'class.author@text',
         bookUrl: 'tag.a@href',
       ),
+      // 书籍信息规则配置
       ruleBookInfo: BookInfoRule(
         name: 'text',
         author: 'class.author@text',
@@ -364,11 +373,13 @@ class BookSource {
         tocUrl: 'class.chapter@href',
         coverUrl: 'class.cover@src',
       ),
+      // 目录规则配置
       ruleToc: TocRule(
         chapterList: 'class.chapter@tag.a',
         chapterName: 'text',
         chapterUrl: 'href',
       ),
+      // 正文内容规则配置
       ruleContent: ContentRule(
         content: 'id.content@textNodes',
         title: 'class.chapter-title@text',
