@@ -3,9 +3,9 @@ import 'package:reader_flutter/models/book.dart';
 import 'package:reader_flutter/ui/screens/reader_screen.dart';
 import 'package:reader_flutter/services/storage_service.dart';
 
-/// 书架页面
+/// Bookshelf screen
 ///
-/// 显示用户收藏的书籍，支持按最近阅读或添加时间排序
+/// Displays user's book collection with sorting by last read time or add time
 class BookshelfScreen extends StatefulWidget {
   const BookshelfScreen({super.key});
 
