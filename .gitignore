@@ -48,3 +48,7 @@ app.*.map.json
 android/key.properties
 android/app/upload-keystore.jks
 *.jks
+
+# Environment variables
+.env.local
+.env.production
