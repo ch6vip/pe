@@ -21,41 +21,41 @@ class Chapter {
     this.wordNumber,
   });
 
-  /// 从 JSON Map 创建 Chapter 实例
+  /// Create a Chapter instance from a JSON map
   ///
-  /// 预期的 JSON 格式：
+  /// Expected JSON format:
   /// ```json
   /// {
   ///   "item_id": "123456",
-  ///   "title": "第一章 开始"
+  ///   "title": "Chapter 1: Begin"
   /// }
   /// ```
   ///
-  /// 支持多种字段名格式，增强数据兼容性：
+  /// Supports multiple field name variants for better compatibility:
   /// - ID: item_id, id, chapter_id
-  /// - 标题: title, chapter_name, name
-  /// - 卷名: volume_name
-  /// - 字数: chapter_word_number, word_number, word_count
+  /// - Title: title, chapter_name, name
+  /// - Volume name: volume_name
+  /// - Word count: chapter_word_number, word_number, word_count
   factory Chapter.fromJson(Map<String, dynamic> json) {
     try {
-      // 支持多种 ID 字段名，增强类型安全
+      // Support multiple ID field names for better type safety.
       final dynamic rawItemId =
           json['item_id'] ?? json['id'] ?? json['chapter_id'];
 
-      // 安全转换 itemId
+      // Safely convert itemId.
       final String itemId = rawItemId?.toString() ?? '';
       if (itemId.isEmpty) {
         throw const FormatException('章节ID为空或无效');
       }
 
-      // 支持多种标题字段名，增强类型安全
+      // Support multiple title field names for better type safety.
       String? title;
       try {
         title = json['title'] as String? ??
             json['chapter_name'] as String? ??
             json['name'] as String?;
       } catch (e) {
-        // 如果标题字段存在但类型错误，尝试转换为字符串
+        // If the title field exists but the type is wrong, try toString().
         final titleValue =
             json['title'] ?? json['chapter_name'] ?? json['name'];
         title = titleValue?.toString();
@@ -63,7 +63,7 @@ class Chapter {
 
       final finalTitle = title?.isNotEmpty == true ? title! : '未知章节';
 
-      // 安全获取卷名
+      // Safely read volume name.
       String? volumeName;
       try {
         volumeName = json['volume_name'] as String?;
@@ -72,7 +72,7 @@ class Chapter {
         volumeName = volumeValue?.toString();
       }
 
-      // 安全转换字数，支持 String/Int 类型
+      // Safely convert word count, supporting String/Int types.
       int? wordNumber;
       final wordNumberValue = json['chapter_word_number'] ??
           json['word_number'] ??
@@ -83,7 +83,7 @@ class Chapter {
         } else if (wordNumberValue is String) {
           wordNumber = int.tryParse(wordNumberValue);
         } else {
-          // 尝试通过 toString() 然后解析
+          // Try parsing after toString().
           wordNumber = int.tryParse(wordNumberValue.toString());
         }
       }
@@ -95,8 +95,7 @@ class Chapter {
         wordNumber: wordNumber,
       );
     } catch (e) {
-      // 如果解析完全失败，返回一个最小可用的 Chapter 对象
-      // 并记录原始数据以便调试
+      // If parsing fails completely, return a minimal usable Chapter.
       final fallbackId = json['item_id']?.toString() ??
           json['id']?.toString() ??
           json['chapter_id']?.toString() ??
@@ -111,7 +110,7 @@ class Chapter {
     }
   }
 
-  /// 将 Chapter 实例转换为 JSON Map
+  /// Convert the Chapter instance to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'item_id': itemId,

@@ -11,16 +11,16 @@ class ChapterContent {
   /// Chapter ID (optional)
   final String? itemId;
 
-  /// HTML 段落起始标签正则（如 <p>, <p class="...">）
+  /// Regex for HTML paragraph start tags (e.g. <p>, <p class="...">).
   static final RegExp _pTagStartPattern = RegExp(r'<p[^>]*>');
 
-  /// HTML 段落结束标签正则
+  /// Regex for HTML paragraph end tags.
   static final RegExp _pTagEndPattern = RegExp(r'</p>');
 
-  /// 所有 HTML 标签正则
+  /// Regex for all HTML tags.
   static final RegExp _allTagsPattern = RegExp(r'<[^>]*>');
 
-  /// HTML article 标签正则
+  /// Regex for HTML article tags.
   static final RegExp _articlePattern = RegExp(
     r'<article>.*?</article>',
     dotAll: true,
@@ -32,27 +32,27 @@ class ChapterContent {
     this.itemId,
   });
 
-  /// 从 JSON Map 创建 ChapterContent 实例
+  /// Create a ChapterContent instance from a JSON map
   ///
-  /// 预期的 JSON 格式：
+  /// Expected JSON format:
   /// ```json
   /// {
   ///   "data": {
-  ///     "title": "第一章 开始",
+  ///     "title": "Chapter 1: Begin",
   ///     "content": "<p>正文内容...</p>"
   ///   }
   /// }
   /// ```
   ///
-  /// HTML 处理逻辑：
-  /// 1. 提取 <article> 标签内容（如果存在）
-  /// 2. 移除 <p> 起始标签
-  /// 3. 将 </p> 替换为双换行符
-  /// 4. 移除所有其他 HTML 标签
-  /// 5. 清理首尾空白字符
+  /// HTML processing steps:
+  /// 1. Extract <article> tag content (if present)
+  /// 2. Remove <p> start tags
+  /// 3. Replace </p> end tags with double newlines
+  /// 4. Remove all other HTML tags
+  /// 5. Trim leading/trailing whitespace
   ///
   /// Throws:
-  /// - [FormatException] 当 JSON 格式不正确或缺少必要字段时
+  /// - [FormatException] when JSON format is invalid or required fields are missing.
   factory ChapterContent.fromJson(Map<String, dynamic> json) {
     final dynamic data = json['data'];
 
@@ -78,19 +78,19 @@ class ChapterContent {
     );
   }
 
-  /// 处理 HTML 内容，移除标签并格式化换行
+  /// Process HTML content: remove tags and normalize line breaks.
   ///
-  /// 处理流程：
-  /// 1. 提取 article 标签内的内容（如果存在）
-  /// 2. 移除 <p> 起始标签
-  /// 3. 将 </p> 结束标签替换为双换行
-  /// 4. 移除其他所有 HTML 标签
-  /// 5. 去除首尾空白
+  /// Steps:
+  /// 1. Extract content inside <article> tags (if present)
+  /// 2. Remove <p> start tags
+  /// 3. Replace </p> end tags with double newlines
+  /// 4. Remove all other HTML tags
+  /// 5. Trim leading/trailing whitespace
   static String _processHtmlContent(String rawContent) {
-    // 先解码 Unicode 转义序列（如 \u003c -> <）
+    // Decode Unicode escape sequences first (e.g. \u003c -> <).
     String decodedContent = rawContent;
 
-    // 提取 article 标签内的内容
+    // Extract content within article tags.
     final articleMatch = _articlePattern.firstMatch(decodedContent);
     if (articleMatch != null) {
       decodedContent = articleMatch.group(0)!;
@@ -103,7 +103,7 @@ class ChapterContent {
         .trim();
   }
 
-  /// 将 ChapterContent 实例转换为 JSON Map
+  /// Convert ChapterContent instance to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'data': {
@@ -114,10 +114,10 @@ class ChapterContent {
     };
   }
 
-  /// 检查内容是否为空
+  /// Whether the content is empty
   bool get isEmpty => content.isEmpty;
 
-  /// 检查内容是否不为空
+  /// Whether the content is not empty
   bool get isNotEmpty => content.isNotEmpty;
 
   @override
