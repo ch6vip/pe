@@ -1,102 +1,102 @@
 import 'dart:convert';
 
-/// 书源数据模型
+/// Book source data model
 ///
-/// 完全兼容 Legado 3.0 标准格式的书源定义
-/// 包含基础信息、高级配置和各类解析规则
+/// Fully compatible with the Legado 3.0 standard format for book sources.
+/// Includes basic info, advanced settings, and parsing rules.
 class BookSource {
-  /// 基础信息字段
+  /// Basic info fields
 
-  /// 书源唯一标识符（URL地址，包括 http/https）
-  /// 在 Legado 中作为主键
+  /// Unique book source identifier (URL, including http/https)
+  /// Used as the primary key in Legado.
   final String bookSourceUrl;
 
-  /// 书源名称
+  /// Book source name
   final String bookSourceName;
 
-  /// 书源分组（多个分组用逗号分隔）
+  /// Book source groups (comma-separated)
   final String? bookSourceGroup;
 
-  /// 书源类型：0文本, 1音频, 2图片, 3文件
+  /// Book source type: 0 text, 1 audio, 2 image, 3 file
   final int bookSourceType;
 
-  /// 详情页URL正则表达式
+  /// Detail page URL regex
   final String? bookUrlPattern;
 
-  /// 手动排序权重
+  /// Manual sort weight
   final int customOrder;
 
-  /// 是否启用该书源
+  /// Whether the book source is enabled
   final bool enabled;
 
-  /// 是否启用发现功能
+  /// Whether explore/discovery is enabled
   final bool enabledExplore;
 
-  /// 书源注释/说明
+  /// Book source notes/description
   final String? bookSourceComment;
 
-  /// 高级配置字段
+  /// Advanced settings fields
 
-  /// JavaScript库
+  /// JavaScript library
   final String? jsLib;
 
-  /// 是否启用CookieJar自动保存cookie
+  /// Whether to enable CookieJar auto-save
   final bool? enabledCookieJar;
 
-  /// 并发率限制
+  /// Concurrency limit
   final String? concurrentRate;
 
-  /// 请求头配置（User-Agent等）
+  /// Request headers (User-Agent, etc.)
   final String? header;
 
-  /// 登录地址
+  /// Login URL
   final String? loginUrl;
 
-  /// 登录UI配置
+  /// Login UI config
   final String? loginUi;
 
-  /// 登录检测JavaScript
+  /// Login check JavaScript
   final String? loginCheckJs;
 
-  /// 封面解密JavaScript
+  /// Cover decode JavaScript
   final String? coverDecodeJs;
 
-  /// 自定义变量说明
+  /// Custom variable notes
   final String? variableComment;
 
-  /// 最后更新时间（用于排序）
+  /// Last update time (for sorting)
   final int lastUpdateTime;
 
-  /// 响应时间（用于排序，毫秒）
+  /// Response time (for sorting, ms)
   final int respondTime;
 
-  /// 智能排序权重
+  /// Smart sorting weight
   final int weight;
 
-  /// 发现页地址
+  /// Explore page URL
   final String? exploreUrl;
 
-  /// 发现页筛选规则
+  /// Explore page filter rule
   final String? exploreScreen;
 
-  /// 搜索地址
+  /// Search URL
   final String? searchUrl;
 
-  /// 规则对象字段
+  /// Rule object fields
 
-  /// 搜索规则
+  /// Search rule
   final SearchRule? ruleSearch;
 
-  /// 发现规则
+  /// Explore rule
   final ExploreRule? ruleExplore;
 
-  /// 书籍详情页规则
+  /// Book detail rule
   final BookInfoRule? ruleBookInfo;
 
-  /// 目录规则（Legado中叫 ruleToc 而不是 ruleChapter）
+  /// Table of contents rule (called ruleToc in Legado)
   final TocRule? ruleToc;
 
-  /// 正文规则
+  /// Content rule
   final ContentRule? ruleContent;
 
   const BookSource({
@@ -131,7 +131,7 @@ class BookSource {
     this.ruleContent,
   });
 
-  /// 从 JSON Map 创建 BookSource 实例
+  /// Create a BookSource instance from a JSON map
   factory BookSource.fromJson(Map<String, dynamic> json) {
     return BookSource(
       bookSourceUrl: json['bookSourceUrl'] as String? ?? '',
@@ -176,13 +176,13 @@ class BookSource {
     );
   }
 
-  /// 从 JSON 字符串创建 BookSource 实例
+  /// Create a BookSource instance from a JSON string
   factory BookSource.fromJsonString(String jsonString) {
     final json = jsonDecode(jsonString) as Map<String, dynamic>;
     return BookSource.fromJson(json);
   }
 
-  /// 将 BookSource 实例转换为 JSON Map
+  /// Convert the BookSource instance to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'bookSourceUrl': bookSourceUrl,
@@ -217,12 +217,12 @@ class BookSource {
     };
   }
 
-  /// 将 BookSource 实例转换为 JSON 字符串
+  /// Convert the BookSource instance to a JSON string
   String toJsonString() {
     return jsonEncode(toJson());
   }
 
-  /// 创建一个带有更新字段的新 BookSource 实例
+  /// Create a new BookSource instance with updated fields
   BookSource copyWith({
     String? bookSourceUrl,
     String? bookSourceName,
@@ -287,7 +287,7 @@ class BookSource {
     );
   }
 
-  /// 获取显示名称（包含分组信息）
+  /// Get display name (includes group info)
   String getDisplayName() {
     if (bookSourceGroup == null || bookSourceGroup!.isEmpty) {
       return bookSourceName;
@@ -295,7 +295,7 @@ class BookSource {
     return '$bookSourceName ($bookSourceGroup)';
   }
 
-  /// 检查是否包含指定分组
+  /// Whether the source includes the given group
   bool hasGroup(String group) {
     if (bookSourceGroup == null || bookSourceGroup!.isEmpty) {
       return false;
@@ -304,7 +304,7 @@ class BookSource {
     return groups.contains(group);
   }
 
-  /// 添加分组
+  /// Add groups
   BookSource addGroup(String groups) {
     final currentGroups =
         bookSourceGroup?.split(',')?.map((g) => g.trim())?.toList() ?? [];
@@ -313,7 +313,7 @@ class BookSource {
     return copyWith(bookSourceGroup: allGroups.join(','));
   }
 
-  /// 移除分组
+  /// Remove groups
   BookSource removeGroup(String groups) {
     if (bookSourceGroup == null || bookSourceGroup!.isEmpty) {
       return this;
@@ -340,10 +340,10 @@ class BookSource {
     return 'BookSource(bookSourceUrl: $bookSourceUrl, bookSourceName: $bookSourceName, enabled: $enabled)';
   }
 
-  /// 创建默认的演示书源
+  /// Create a default demo source
   ///
-  /// 提供一个功能完整的示例书源，用于演示和测试应用功能
-  /// 用户可以参考此结构创建自己的书源
+  /// Provides a full example source for demos and testing.
+  /// Users can follow this structure to create their own sources.
   static BookSource createDemoSource() {
     final now = DateTime.now().millisecondsSinceEpoch;
     return BookSource(
@@ -357,14 +357,14 @@ class BookSource {
       respondTime: 180000,
       weight: 0,
       searchUrl: '/search?key={key}',
-      // 搜索规则配置
+      // Search rule configuration
       ruleSearch: SearchRule(
         bookList: 'class.book-item@tag.li',
         name: 'text',
         author: 'class.author@text',
         bookUrl: 'tag.a@href',
       ),
-      // 书籍信息规则配置
+      // Book info rule configuration
       ruleBookInfo: BookInfoRule(
         name: 'text',
         author: 'class.author@text',
@@ -373,13 +373,13 @@ class BookSource {
         tocUrl: 'class.chapter@href',
         coverUrl: 'class.cover@src',
       ),
-      // 目录规则配置
+      // Table of contents rule configuration
       ruleToc: TocRule(
         chapterList: 'class.chapter@tag.a',
         chapterName: 'text',
         chapterUrl: 'href',
       ),
-      // 正文内容规则配置
+      // Content rule configuration
       ruleContent: ContentRule(
         content: 'id.content@textNodes',
         title: 'class.chapter-title@text',
@@ -388,7 +388,7 @@ class BookSource {
   }
 }
 
-/// 书籍列表规则基类
+/// Base class for book list rules
 abstract class BookListRule {
   final String? bookList;
   final String? name;
@@ -430,7 +430,7 @@ abstract class BookListRule {
   }
 }
 
-/// 搜索规则
+/// Search rule
 class SearchRule extends BookListRule {
   final String? checkKeyWord;
 
@@ -472,7 +472,7 @@ class SearchRule extends BookListRule {
   }
 }
 
-/// 发现规则
+/// Explore rule
 class ExploreRule extends BookListRule {
   const ExploreRule({
     super.bookList,
@@ -503,7 +503,7 @@ class ExploreRule extends BookListRule {
   }
 }
 
-/// 书籍详情页规则
+/// Book detail rule
 class BookInfoRule {
   final String? init;
   final String? name;
@@ -568,7 +568,7 @@ class BookInfoRule {
   }
 }
 
-/// 目录规则（Legado中叫 TocRule）
+/// Table of contents rule (TocRule in Legado)
 class TocRule {
   final String? preUpdateJs;
   final String? chapterList;
@@ -625,7 +625,7 @@ class TocRule {
   }
 }
 
-/// 正文规则
+/// Content rule
 class ContentRule {
   final String? content;
   final String? title;
