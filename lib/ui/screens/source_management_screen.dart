@@ -26,7 +26,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
         title: const Text('书源管理'),
         elevation: 0,
         actions: [
-          // 网络导入按钮
+          // 更多操作菜单
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             tooltip: '更多操作',
