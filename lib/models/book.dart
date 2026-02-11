@@ -1,20 +1,20 @@
-/// 书籍数据模型
+/// Book data model
 ///
-/// 用于表示小说的基本信息，包括标识、元数据和阅读状态
+/// Represents basic information about a novel, including ID, metadata, and reading status
 class Book {
-  /// 书籍唯一标识符
+  /// Unique book identifier
   final String id;
 
-  /// 书籍名称
+  /// Book title
   final String name;
 
-  /// 作者名称
+  /// Author name
   final String author;
 
-  /// 封面图片 URL
+  /// Cover image URL
   final String coverUrl;
 
-  /// 书籍简介
+  /// Book description/intro
   final String description;
 
   /// 书源唯一标识（BookSource.bookSourceUrl）
