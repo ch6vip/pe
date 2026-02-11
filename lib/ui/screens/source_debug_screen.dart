@@ -75,10 +75,10 @@ class _SourceDebugScreenState extends State<SourceDebugScreen> {
             tooltip: '清空日志',
             onPressed: _logs.isEmpty ? null : _clearLogs,
           ),
-          // 停止调试按钮
+          // 停止调试按钮（仅调试时显示）
           if (_isDebugging)
             IconButton(
-              icon: const Icon(Icons.stop),
+              icon: const Icon(Icons.stop, color: Colors.red),
               tooltip: '停止调试',
               onPressed: _stopDebug,
             ),
