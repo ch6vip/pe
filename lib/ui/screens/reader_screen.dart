@@ -78,6 +78,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   @override
   void dispose() {
+    // 释放滚动控制器，防止内存泄漏
     _scrollController.dispose();
     super.dispose();
   }
