@@ -30,6 +30,12 @@ class Chapter {
   ///   "title": "第一章 开始"
   /// }
   /// ```
+  ///
+  /// 支持多种字段名格式，增强数据兼容性：
+  /// - ID: item_id, id, chapter_id
+  /// - 标题: title, chapter_name, name
+  /// - 卷名: volume_name
+  /// - 字数: chapter_word_number, word_number, word_count
   factory Chapter.fromJson(Map<String, dynamic> json) {
     try {
       // 支持多种 ID 字段名，增强类型安全
