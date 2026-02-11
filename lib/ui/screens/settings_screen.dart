@@ -86,6 +86,11 @@ class SettingsScreen extends StatelessWidget {
   }
 
   /// 构建阅读设置分组
+  ///
+  /// 包含所有与阅读体验相关的设置项：
+  /// - 字体大小调节
+  /// - 行高调节
+  /// - 主题切换
   Widget _buildReadingSettingsSection(
     BuildContext context,
     ReaderSettingsService settings,
