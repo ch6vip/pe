@@ -74,6 +74,7 @@ class _SourceEditScreenState extends State<SourceEditScreen>
 
   @override
   void dispose() {
+    // 释放所有控制器，防止内存泄漏
     _tabController.dispose();
     _nameController.dispose();
     _baseUrlController.dispose();
