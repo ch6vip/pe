@@ -4,10 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../models/book_source.dart';
 
-/// 书源管理服务
+/// Book source manager service
 ///
-/// 负责书源的增删改查操作和本地持久化存储
-/// 使用 shared_preferences 进行本地数据存储
+/// Handles CRUD operations for book sources and local persistence.
+/// Uses shared_preferences for local storage.
 class SourceManagerService extends ChangeNotifier {
   static const String _sourcesKey = 'book_sources';
   static const String _lastUpdateTimeKey = 'sources_last_update';
@@ -16,31 +16,31 @@ class SourceManagerService extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  /// 获取所有书源列表（只读）
+  /// Get all book sources (read-only)
   List<BookSource> get sources => List.unmodifiable(_sources);
 
-  /// 获取启用的书源列表
+  /// Get enabled book sources
   List<BookSource> get enabledSources =>
       _sources.where((source) => source.enabled).toList();
 
-  /// 是否正在加载
+  /// Whether loading is in progress
   bool get isLoading => _isLoading;
 
-  /// 错误信息
+  /// Error message
   String? get errorMessage => _errorMessage;
 
-  /// 获取书源总数
+  /// Total number of sources
   int get sourceCount => _sources.length;
 
-  /// 获取启用书源数量
+  /// Number of enabled sources
   int get enabledSourceCount => enabledSources.length;
 
-  /// 初始化服务，加载本地存储的书源数据
+  /// Initialize service and load sources from local storage
   Future<void> initialize() async {
     await _loadSources();
   }
 
-  /// 从本地存储加载书源数据
+  /// Load sources from local storage
   Future<void> _loadSources() async {
     _setLoading(true);
     try {
@@ -53,7 +53,7 @@ class SourceManagerService extends ChangeNotifier {
             .map((json) => BookSource.fromJson(json as Map<String, dynamic>))
             .toList();
       } else {
-        // 如果没有本地数据，创建默认的演示书源
+        // If there's no local data, create a default demo source.
         _sources = [BookSource.createDemoSource()];
         await _saveSources();
       }
@@ -61,14 +61,14 @@ class SourceManagerService extends ChangeNotifier {
       _clearError();
     } catch (e) {
       _setError('加载书源数据失败: $e');
-      // 发生错误时创建默认书源，确保应用可用
+      // Fall back to a demo source to keep the app usable.
       _sources = [BookSource.createDemoSource()];
     } finally {
       _setLoading(false);
     }
   }
 
-  /// 保存书源数据到本地存储
+  /// Save sources to local storage
   Future<void> _saveSources() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -87,24 +87,24 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 添加新书源
+  /// Add a new book source
   Future<bool> addSource(BookSource source) async {
     try {
       _setLoading(true);
 
-      // 检查是否已存在相同 URL 的书源
+      // Check for an existing source with the same URL.
       if (_sources.any((s) => s.bookSourceUrl == source.bookSourceUrl)) {
         _setError('已存在相同 URL 的书源');
         return false;
       }
 
-      // 检查是否已存在相同名称的书源
+      // Check for an existing source with the same name.
       if (_sources.any((s) => s.bookSourceName == source.bookSourceName)) {
         _setError('已存在相同名称的书源');
         return false;
       }
 
-      // 创建带有时间戳的新书源
+      // Create a new source with a timestamp.
       final newSource = source.copyWith(
         lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
       );
@@ -121,10 +121,10 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 根据名称和 URL 创建并添加新书源（简化版导入）
+  /// Create and add a book source by name and URL (simple import)
   Future<bool> addSimpleSource(String name, String bookSourceUrl) async {
     try {
-      // 验证输入
+      // Validate input.
       if (name.trim().isEmpty) {
         _setError('书源名称不能为空');
         return false;
@@ -135,7 +135,7 @@ class SourceManagerService extends ChangeNotifier {
         return false;
       }
 
-      // 标准化 URL
+      // Normalize URL.
       String normalizedUrl = bookSourceUrl.trim();
       if (!normalizedUrl.startsWith('http://') &&
           !normalizedUrl.startsWith('https://')) {
@@ -155,7 +155,7 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 更新书源信息
+  /// Update a book source
   Future<bool> updateSource(BookSource updatedSource) async {
     try {
       _setLoading(true);
@@ -168,7 +168,7 @@ class SourceManagerService extends ChangeNotifier {
         return false;
       }
 
-      // 更新时间戳
+      // Update timestamp.
       final sourceWithTimestamp = updatedSource.copyWith(
         lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
       );
@@ -185,7 +185,7 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 切换书源启用状态
+  /// Toggle source enabled state
   Future<bool> toggleSourceEnabled(String sourceUrl) async {
     try {
       final index =
@@ -210,7 +210,7 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 删除书源
+  /// Delete a book source
   Future<bool> deleteSource(String sourceUrl) async {
     try {
       _setLoading(true);
@@ -234,7 +234,7 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 根据URL获取书源
+  /// Get a source by URL
   BookSource? getSourceByUrl(String sourceUrl) {
     try {
       return _sources.firstWhere((source) => source.bookSourceUrl == sourceUrl);
@@ -243,7 +243,7 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 清空所有书源
+  /// Clear all sources
   Future<bool> clearAllSources() async {
     try {
       _setLoading(true);
@@ -259,7 +259,7 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 重置为默认书源
+  /// Reset to the default source
   Future<bool> resetToDefault() async {
     try {
       _setLoading(true);
@@ -275,7 +275,7 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 设置加载状态
+  /// Set loading state
   void _setLoading(bool loading) {
     if (_isLoading != loading) {
       _isLoading = loading;
@@ -283,13 +283,13 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 设置错误信息
+  /// Set error message
   void _setError(String error) {
     _errorMessage = error;
     notifyListeners();
   }
 
-  /// 清除错误信息
+  /// Clear error message
   void _clearError() {
     if (_errorMessage != null) {
       _errorMessage = null;
@@ -297,26 +297,26 @@ class SourceManagerService extends ChangeNotifier {
     }
   }
 
-  /// 手动清除错误信息（供外部调用）
+  /// Clear error manually (for external callers)
   void clearError() {
     _clearError();
   }
 
-  /// 从 URL 导入书源
+  /// Import sources from a URL
   ///
-  /// 支持 JSON 格式的书源文件，可以是单个书源对象或书源数组
-  /// 返回成功导入的书源数量
+  /// Supports JSON source files as a single object or an array.
+  /// Returns the number of imported sources.
   Future<int> importSourceFromUrl(String url) async {
     try {
       _setLoading(true);
       _clearError();
 
-      // 验证 URL
+      // Validate URL.
       if (url.trim().isEmpty) {
         throw Exception('URL 不能为空');
       }
 
-      // 发起网络请求
+      // Perform the network request.
       final response = await http.get(
         Uri.parse(url.trim()),
         headers: {
@@ -329,26 +329,26 @@ class SourceManagerService extends ChangeNotifier {
         throw Exception('网络请求失败，状态码: ${response.statusCode}');
       }
 
-      // 解析响应数据
+      // Parse response data.
       final responseData = json.decode(response.body);
       List<BookSource> sourcesToImport = [];
 
-      // 处理 JSON 数据兼容性：可能是单个对象或数组
+      // Handle JSON that may be a single object or an array.
       if (responseData is List) {
-        // JSON 数组：遍历每个元素转换为 BookSource
+        // JSON array: convert each element to a BookSource.
         for (final item in responseData) {
           if (item is Map<String, dynamic>) {
             try {
               final source = BookSource.fromJson(item);
               sourcesToImport.add(source);
             } catch (e) {
-              // 调试信息：解析单个书源失败
+              // Debug info: failed to parse a single source.
               debugPrint('解析单个书源失败: $e, 数据: $item');
             }
           }
         }
       } else if (responseData is Map<String, dynamic>) {
-        // JSON 对象：直接转换为 BookSource
+        // JSON object: convert directly to a BookSource.
         try {
           final source = BookSource.fromJson(responseData);
           sourcesToImport.add(source);
@@ -363,25 +363,25 @@ class SourceManagerService extends ChangeNotifier {
         throw Exception('未找到有效的书源数据');
       }
 
-      // 批量导入书源（去重逻辑）
+      // Bulk import with deduplication.
       int importedCount = 0;
       for (final source in sourcesToImport) {
         bool shouldAdd = true;
         bool shouldUpdate = false;
 
-        // 如果存在相同 bookSourceUrl，则更新
+        // Update if the same bookSourceUrl exists.
         if (_sources.any((s) => s.bookSourceUrl == source.bookSourceUrl)) {
           shouldAdd = false;
           shouldUpdate = true;
         }
-        // 如果存在相同名称但不同 bookSourceUrl，则跳过（避免重复）
+        // Skip if the same name exists with a different URL.
         else if (_sources
             .any((s) => s.bookSourceName == source.bookSourceName)) {
           shouldAdd = false;
         }
 
         if (shouldUpdate) {
-          // 更新现有书源
+          // Update existing source.
           final index = _sources
               .indexWhere((s) => s.bookSourceUrl == source.bookSourceUrl);
           final updatedSource = source.copyWith(
@@ -390,7 +390,7 @@ class SourceManagerService extends ChangeNotifier {
           _sources[index] = updatedSource;
           importedCount++;
         } else if (shouldAdd) {
-          // 添加新书源
+          // Add new source.
           final newSource = source.copyWith(
             lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
           );
@@ -399,7 +399,7 @@ class SourceManagerService extends ChangeNotifier {
         }
       }
 
-      // 保存到本地存储
+      // Save to local storage.
       if (importedCount > 0) {
         await _saveSources();
         notifyListeners();
