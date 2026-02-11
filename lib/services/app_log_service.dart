@@ -111,13 +111,17 @@ class AppLogService {
   }
 
   /// 根据级别筛选日志
+  ///
+  /// 返回指定日志级别的所有日志条目
   List<LogEntry> getLogsByLevel(LogLevel level) {
     return _logs.where((log) => log.level == level).toList();
   }
 
   /// 根据标签筛选日志
+  ///
+  /// 返回指定标签的所有日志条目，不区分大小写
   List<LogEntry> getLogsByTag(String tag) {
-    return _logs.where((log) => log.tag == tag).toList();
+    return _logs.where((log) => log.tag.toLowerCase() == tag.toLowerCase()).toList();
   }
 
   /// 导出日志为文本
