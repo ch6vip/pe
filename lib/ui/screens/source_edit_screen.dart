@@ -9,6 +9,13 @@ import 'source_debug_screen.dart';
 /// 书源编辑页面
 ///
 /// 提供新建和编辑书源的功能，使用 TabBar 分组展示不同类型的规则配置
+///
+/// 功能特性：
+/// - 新建模式：创建全新的书源配置
+/// - 编辑模式：修改现有书源的规则和设置
+/// - 四个配置标签页：基本信息、搜索规则、目录规则、正文规则
+/// - 表单验证：确保必填字段不为空
+/// - 调试功能：编辑模式下可直接进入调试
 class SourceEditScreen extends StatefulWidget {
   /// 要编辑的书源，如果为 null 则表示新建模式
   final BookSource? source;
