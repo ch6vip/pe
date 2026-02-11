@@ -88,15 +88,21 @@ class _BookshelfScreenState extends State<BookshelfScreen>
   }
 
   /// 对书籍进行排序
+  ///
+  /// 根据 [SortOrder] 对书籍列表进行排序，支持：
+  /// - [SortOrder.byReadTime]: 按最近阅读时间降序
+  /// - [SortOrder.byAddTime]: 按添加时间降序
   void _sortBooks() {
     final books = List<Book>.from(_books);
 
     switch (_sortOrder) {
       case SortOrder.byReadTime:
+        // 最近阅读的在前面，未阅读的排在后面
         books.sort(
           (a, b) => (b.lastReadTime ?? 0).compareTo(a.lastReadTime ?? 0),
         );
       case SortOrder.byAddTime:
+        // 最近添加的在前面
         books.sort((a, b) => (b.addTime ?? 0).compareTo(a.addTime ?? 0));
     }
 
