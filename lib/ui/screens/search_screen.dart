@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:reader_flutter/ui/screens/results_screen.dart';
 
-/// 搜索页面
+/// Search screen
 ///
-/// 作为应用首页，展示搜索功能和热门榜单
+/// Serves as the app's home page, displaying search functionality and popular rankings
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
