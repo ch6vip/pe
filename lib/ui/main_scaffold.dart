@@ -17,6 +17,14 @@ class _NavigationItem {
   });
 }
 
+/// 主脚手架组件
+///
+/// 应用的主要框架，包含底部导航和三个主要页面：
+/// - 搜索页
+/// - 书架页
+/// - 设置页
+///
+/// 默认显示书架页，因为这是用户最常使用的功能
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
 
