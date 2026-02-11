@@ -5,14 +5,14 @@ import 'package:reader_flutter/models/chapter_content.dart';
 import 'package:reader_flutter/services/app_log_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 存储异常
+/// Storage exception
 ///
-/// 用于封装本地存储操作中的错误信息
+/// Encapsulates error information during local storage operations
 class StorageException implements Exception {
-  /// 错误消息
+  /// Error message
   final String message;
 
-  /// 原始异常（如果有）
+  /// Original exception if any
   final Object? originalError;
 
   const StorageException(this.message, {this.originalError});
@@ -21,12 +21,12 @@ class StorageException implements Exception {
   String toString() => 'StorageException: $message';
 }
 
-/// 排序方式枚举
+/// Sort order enum
 enum SortOrder {
-  /// 按最近阅读时间排序
+  /// Sort by last read time
   byReadTime('byReadTime'),
 
-  /// 按添加时间排序
+  /// Sort by add time
   byAddTime('byAddTime');
 
   /// 存储使用的字符串值
