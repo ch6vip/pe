@@ -51,8 +51,16 @@ class SourceDebugService {
   ///
   /// [source] 要调试的书源
   /// [keyword] 测试关键词或书籍详情页URL
-  /// 返回调试结果，通过 Stream 实时输出日志
+  ///
+  /// 调试流程：
+  /// 1. 测试搜索规则，获取搜索结果
+  /// 2. 使用第一个搜索结果测试详情规则
+  /// 3. 测试目录规则（如果有）
+  /// 4. 测试正文规则（如果有）
+  ///
+  /// 所有调试结果通过 Stream 实时输出
   Future<void> debugSource(BookSource source, String keyword) async {
+    // 防止重复调试
     if (_isDebugging) {
       _log('⚠️ 已有调试任务正在进行，请等待完成');
       return;
