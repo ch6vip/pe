@@ -38,12 +38,14 @@ class _BookshelfScreenState extends State<BookshelfScreen>
   @override
   void initState() {
     super.initState();
+    // 监听应用生命周期，从后台恢复时刷新书架
     WidgetsBinding.instance.addObserver(this);
     _loadBookshelf();
   }
 
   @override
   void dispose() {
+    // 移除生命周期监听
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
