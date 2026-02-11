@@ -6,6 +6,8 @@ import 'package:reader_flutter/models/book.dart';
 import 'package:reader_flutter/services/source_manager_service.dart';
 
 /// 阅读主题配置
+///
+/// 封装阅读主题的背景色和文字颜色
 class _ReaderTheme {
   final Color backgroundColor;
   final Color fontColor;
@@ -16,6 +18,13 @@ class _ReaderTheme {
 /// 阅读器页面
 ///
 /// 提供沉浸式阅读体验，支持章节切换、字号调整、主题切换等功能
+///
+/// 功能特性：
+/// - 点击屏幕切换 UI 显示/隐藏
+/// - 侧边抽屉显示章节列表
+/// - 底部工具栏切换章节和调整设置
+/// - 支持 4 种预设主题
+/// - 字号和行高可调节
 class ReaderScreen extends StatefulWidget {
   /// 要阅读的书籍
   final Book book;
