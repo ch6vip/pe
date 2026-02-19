@@ -180,6 +180,7 @@ class StorageService {
   /// - [StorageException] 当存储操作失败时
   Future<bool> removeBookFromShelf(String bookId) async {
     if (bookId.isEmpty) {
+      _logService.warning('尝试移除空的书籍 ID', tag: 'StorageService');
       return false;
     }
 
