@@ -110,6 +110,9 @@ class _MainScaffoldState extends State<MainScaffold> {
       onTap: _onItemTapped,
       type: BottomNavigationBarType.fixed,
       elevation: 8,
+      selectedFontSize: 12,
+      unselectedFontSize: 12,
+      iconSize: 24,
       items: _navigationItems.map((item) {
         return BottomNavigationBarItem(
           icon: Icon(item.icon),
