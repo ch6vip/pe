@@ -150,6 +150,34 @@ class AppLogService {
     return buffer.toString();
   }
 
+  /// 搜索日志
+  ///
+  /// 根据关键字搜索日志内容
+  /// [keyword] 搜索关键字，不区分大小写
+  /// 返回包含关键字的所有日志条目
+  List<LogEntry> searchLogs(String keyword) {
+    if (keyword.isEmpty) return List.from(_logs);
+    final lowerKeyword = keyword.toLowerCase();
+    return _logs.where((log) =>
+      log.message.toLowerCase().contains(lowerKeyword) ||
+      log.tag.toLowerCase().contains(lowerKeyword)
+    ).toList();
+  }
+
+  /// 获取日志统计信息
+  ///
+  /// 返回各级别日志的数量统计
+  Map<LogLevel, int> getLogStatistics() {
+    final stats = <LogLevel, int>{};
+    for (final level in LogLevel.values) {
+      stats[level] = 0;
+    }
+    for (final log in _logs) {
+      stats[log.level] = (stats[log.level] ?? 0) + 1;
+    }
+    return stats;
+  }
+
   /// 释放资源
   void dispose() {
     _logController.close();
