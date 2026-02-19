@@ -140,21 +140,19 @@ class ReaderSettingsService extends ChangeNotifier {
   // ==================== 持久化存储方法 ====================
 
   /// 保存设置到 SharedPreferences
+  ///
+  /// 性能优化：批量保存以减少 I/O 操作次数
   Future<void> _saveSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // 保存字体大小
-      await prefs.setDouble(_keyFontSize, _fontSize);
-
-      // 保存行高
-      await prefs.setDouble(_keyLineHeight, _lineHeight);
-
-      // 保存翻页动画类型（使用枚举的索引）
-      await prefs.setInt(_keyPageAnimation, _pageAnimation.index);
-
-      // 保存主题（使用枚举的索引）
-      await prefs.setInt(_keyTheme, _theme.index);
+      // 批量保存所有设置，减少 I/O 操作次数
+      await Future.wait([
+        prefs.setDouble(_keyFontSize, _fontSize),
+        prefs.setDouble(_keyLineHeight, _lineHeight),
+        prefs.setInt(_keyPageAnimation, _pageAnimation.index),
+        prefs.setInt(_keyTheme, _theme.index),
+      ]);
 
       _logService.info('阅读设置已保存', tag: 'ReaderSettingsService');
     } catch (e) {
