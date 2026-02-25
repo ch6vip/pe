@@ -34,6 +34,11 @@ class RuleParser {
     return RuleParser._(false, null, document);
   }
 
+  /// Selects a list of elements or items using a rule.
+  ///
+  /// For JSON, the rule can be a direct key or JSONPath.
+  /// For HTML, the rule can be a CSS selector with optional `@attr`.
+  /// If [context] is provided, selection is scoped to that node/root.
   List<dynamic> selectList(String? rule, {dynamic context}) {
     final normalized = rule?.trim() ?? '';
     if (normalized.isEmpty) {
@@ -48,6 +53,11 @@ class RuleParser {
     return _selectHtmlList(normalized, context: context as dom.Element?);
   }
 
+  /// Selects a single string value using a rule.
+  ///
+  /// For JSON, values are normalized into strings.
+  /// For HTML, returns `text`, `html`, `textNodes`, or attribute values via `@attr`.
+  /// If [context] is provided, selection is scoped to that node/root.
   String selectString(String? rule, {dynamic context}) {
     final normalized = rule?.trim() ?? '';
     if (normalized.isEmpty) return '';

@@ -44,6 +44,7 @@ class ApiService {
   // ==================== 公共方法 ====================
 
   /// 获取原始响应（供调试与解析器使用）
+  /// Returns raw HTTP response for debugging and rule verification.
   Future<http.Response> fetchRaw(String url) async {
     final trimmed = url.trim();
     if (trimmed.isEmpty) {
@@ -73,6 +74,7 @@ class ApiService {
   ///
   /// Throws:
   /// - [ApiException] 当搜索请求失败时
+  /// Designed for reuse by other rule-driven aggregation services.
   Future<List<Book>> searchBooks(
     BookSource source,
     String keyword, {
@@ -140,6 +142,7 @@ class ApiService {
   ///
   /// Throws:
   /// - [ApiException] 当请求失败或数据格式错误时
+  /// Can be reused by clients that only need detail data.
   Future<Book> getBookDetail(BookSource source, String bookUrl) async {
     _ensureSource(source);
 
@@ -196,6 +199,7 @@ class ApiService {
   ///
   /// Throws:
   /// - [ApiException] 当请求失败或数据格式错误时
+  /// Compatible with multiple JSON response shapes.
   Future<List<Chapter>> getChapters(BookSource source, String tocUrl) async {
     _ensureSource(source);
 
@@ -313,6 +317,7 @@ class ApiService {
   ///
   /// Throws:
   /// - [ApiException] 当请求失败或数据格式错误时
+  /// Separates content retrieval from parsing logic for reuse.
   Future<ChapterContent> getContent(
     BookSource source,
     String contentUrl,
@@ -563,6 +568,7 @@ class ApiService {
   }
 
   /// 释放资源
+  /// Call when the service is no longer needed.
   void dispose() {
     _client.close();
   }
