@@ -8,6 +8,31 @@ class ChapterContent {
     this.itemId,
   });
 
+  factory ChapterContent.fromJson(Map<String, dynamic> json) {
+      final dynamic data = json['data'];
+
+      if (data == null) {
+        throw const FormatException('章节数据缺失：响应中缺少 data 字段');
+      }
+
+      if (data is! Map<String, dynamic>) {
+        throw const FormatException('章节数据格式错误：data 字段格式不正确');
+      }
+
+      final dynamic rawContent = data['content'];
+      if (rawContent == null) {
+        throw const FormatException('章节内容缺失：响应中缺少 content 字段');
+      }
+
+      final String processedContent = _processHtmlContent(rawContent.toString());
+
+      return ChapterContent(
+        title: (data['title'] as String?) ?? '未知标题',
+        content: processedContent,
+        itemId: data['item_id']?.toString(),
+      );
+    }
+
   /// Chapter title
   final String title;
 
@@ -31,52 +56,6 @@ class ChapterContent {
     r'<article>.*?</article>',
     dotAll: true,
   );
-
-  /// Create a ChapterContent instance from a JSON map
-  ///
-  /// Expected JSON format:
-  /// ```json
-  /// {
-  ///   "data": {
-  ///     "title": "Chapter 1: Begin",
-  ///     "content": "<p>正文内容...</p>"
-  ///   }
-  /// }
-  /// ```
-  ///
-  /// HTML processing steps:
-  /// 1. Extract <article> tag content (if present)
-  /// 2. Remove <p> start tags
-  /// 3. Replace </p> end tags with double newlines
-  /// 4. Remove all other HTML tags
-  /// 5. Trim leading/trailing whitespace
-  ///
-  /// Throws:
-  /// - [FormatException] when JSON format is invalid or required fields are missing.
-  factory ChapterContent.fromJson(Map<String, dynamic> json) {
-    final dynamic data = json['data'];
-
-    if (data == null) {
-      throw const FormatException('章节数据缺失：响应中缺少 data 字段');
-    }
-
-    if (data is! Map<String, dynamic>) {
-      throw const FormatException('章节数据格式错误：data 字段格式不正确');
-    }
-
-    final dynamic rawContent = data['content'];
-    if (rawContent == null) {
-      throw const FormatException('章节内容缺失：响应中缺少 content 字段');
-    }
-
-    final String processedContent = _processHtmlContent(rawContent.toString());
-
-    return ChapterContent(
-      title: (data['title'] as String?) ?? '未知标题',
-      content: processedContent,
-      itemId: data['item_id']?.toString(),
-    );
-  }
 
   /// Process HTML content: remove tags and normalize line breaks.
   ///

@@ -16,6 +16,58 @@ class Book {
     this.lastReadChapterTitle,
   });
 
+  /// Create a Book instance from a JSON map.
+  ///
+  /// Supports multiple API field variants:
+  /// - `book_id`, `bookId`, `id` -> [id]
+  /// - `book_name`, `name` -> [name]
+  /// - `thumb_url`, `cover_url`, `coverUrl` -> [coverUrl]
+  /// - `abstract`, `description` -> [description]
+  factory Book.fromJson(Map<String, dynamic> json) {
+    return Book(
+      id: _parseId(json),
+      name: _parseString(json, ['book_name', 'name'], '未知书名'),
+      author: _parseString(json, ['author'], '未知作者'),
+      coverUrl: _parseString(json, [
+        'thumb_url',
+        'cover_url',
+        'coverUrl',
+      ], _defaultCoverUrl),
+      description: _parseString(json, ['abstract', 'description'], '暂无简介'),
+      bookSourceUrl: json['bookSourceUrl'] as String?,
+      tocUrl: json['tocUrl'] as String?,
+      originName: json['originName'] as String?,
+      addTime: json['addTime'] as int?,
+      lastReadTime: json['lastReadTime'] as int?,
+      lastReadChapterTitle: json['lastReadChapterTitle'] as String?,
+    );
+  }
+
+  /// Create a Book instance from search API `book_data`.
+  ///
+  /// Expected JSON format:
+  /// ```json
+  /// {
+  ///   "book_id": "123456",
+  ///   "book_name": "??",
+  ///   "author": "??",
+  ///   "thumb_url": "??URL",
+  ///   "abstract": "??"
+  /// }
+  /// ```
+  factory Book.fromSearchData(Map<String, dynamic> json) {
+    return Book(
+      id: json['book_id']?.toString() ?? '',
+      name: json['book_name']?.toString() ?? '未知书名',
+      author: json['author']?.toString() ?? '未知作者',
+      coverUrl: json['thumb_url']?.toString() ?? _defaultCoverUrl,
+      description: json['abstract']?.toString() ?? '暂无简介',
+      bookSourceUrl: json['bookSourceUrl'] as String?,
+      tocUrl: json['tocUrl'] as String?,
+      originName: json['originName'] as String?,
+    );
+  }
+
   /// Unique book identifier
   final String id;
 
@@ -52,61 +104,6 @@ class Book {
   /// 默认封面图片 URL
   static const String _defaultCoverUrl =
       'https://p3-novel.byteimg.com/origin/novel-cover/0f5032c8338ecbe9173b620a934755a5';
-
-  
-  /// 从 JSON Map 创建 Book 实例
-  ///
-  /// 支持多种 API 返回格式的字段名映射：
-  /// - `book_id`, `bookId`, `id` -> [id]
-  /// - `book_name`, `name` -> [name]
-  /// - `thumb_url`, `cover_url`, `coverUrl` -> [coverUrl]
-  /// - `abstract`, `description` -> [description]
-  factory Book.fromJson(Map<String, dynamic> json) {
-    return Book(
-      id: _parseId(json),
-      name: _parseString(json, ['book_name', 'name'], '未知书名'),
-      author: _parseString(json, ['author'], '未知作者'),
-      coverUrl: _parseString(json, [
-        'thumb_url',
-        'cover_url',
-        'coverUrl',
-      ], _defaultCoverUrl),
-      description: _parseString(json, ['abstract', 'description'], '暂无简介'),
-      bookSourceUrl: json['bookSourceUrl'] as String?,
-      tocUrl: json['tocUrl'] as String?,
-      originName: json['originName'] as String?,
-      addTime: json['addTime'] as int?,
-      lastReadTime: json['lastReadTime'] as int?,
-      lastReadChapterTitle: json['lastReadChapterTitle'] as String?,
-    );
-  }
-
-  /// 从搜索API的book_data创建Book实例
-  ///
-  /// 搜索API返回格式：
-  /// ```json
-  /// {
-  ///   "book_id": "123456",
-  ///   "book_name": "书名",
-  ///   "author": "作者",
-  ///   "thumb_url": "封面URL",
-  ///   "abstract": "简介"
-  /// }
-  /// ```
-  factory Book.fromSearchData(Map<String, dynamic> json) {
-    return Book(
-      id: json['book_id']?.toString() ?? '',
-      name: json['book_name']?.toString() ?? '未知书名',
-      author: json['author']?.toString() ?? '未知作者',
-      coverUrl: json['thumb_url']?.toString() ?? _defaultCoverUrl,
-      description: json['abstract']?.toString() ?? '暂无简介',
-      bookSourceUrl: json['bookSourceUrl'] as String?,
-      tocUrl: json['tocUrl'] as String?,
-      originName: json['originName'] as String?,
-    );
-  }
-
-  /// 解析书籍 ID，支持多个字段名
   static String _parseId(Map<String, dynamic> json) {
     final dynamic rawId = json['book_id'] ?? json['bookId'] ?? json['id'];
     return rawId?.toString() ?? '';

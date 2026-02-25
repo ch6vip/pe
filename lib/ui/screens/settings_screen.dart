@@ -324,8 +324,8 @@ class SettingsScreen extends StatelessWidget {
           SliderTheme(
             data: const SliderThemeData(
               trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
+              overlayShape: RoundSliderOverlayShape(overlayRadius: 16),
             ),
             child: Slider(
               value: value,

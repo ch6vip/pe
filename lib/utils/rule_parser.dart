@@ -236,8 +236,8 @@ class RuleParser {
 }
 
 class _RuleParts {
+  const _RuleParts(this.selectors, this.attr);
+
   final List<String> selectors;
   final String? attr;
-
-  const _RuleParts(this.selectors, this.attr);
 }

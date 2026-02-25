@@ -327,10 +327,10 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
+              Navigator.pop(dialogContext);
               final success =
                   await sourceService.deleteSource(source.bookSourceUrl);
-              if (!mounted) return;
-              Navigator.pop(dialogContext);
+              if (!context.mounted) return;
               if (success) {
                 ScaffoldMessenger.of(
                   context,
@@ -424,7 +424,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
                   url,
                 );
 
-                if (!mounted) return;
+                if (!context.mounted) return;
 
                 // 清除加载提示
                 ScaffoldMessenger.of(context).clearSnackBars();
@@ -436,7 +436,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
                   ),
                 );
               } catch (e) {
-                if (!mounted) return;
+                if (!context.mounted) return;
                 // 清除加载提示
                 ScaffoldMessenger.of(context).clearSnackBars();
 
