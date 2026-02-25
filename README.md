@@ -1,204 +1,164 @@
-# PE 小说阅读器 (Flutter版)
+﻿# PE Reader / PE 小说阅读器 (Flutter)
 
-## 简介
+## 概览 / Overview
 
-一款基于 Flutter 框架开发的跨平台小说阅读应用。这是一款专注于为读者提供极致阅读体验的轻量级小说阅读器。采用 Flutter 跨平台技术实现，具备出色的性能表现和流畅的用户交互体验。通过接入网络公开的小说 API 接口，为用户提供丰富的小说资源，让阅读变得更加纯粹和愉悦。
+PE Reader 是一款基于 Flutter 的跨平台开源小说阅读器，面向 **读者、开源贡献者与 Flutter 开发者**。本项目强调 **Legado 书源协议兼容** 与 **可复用的规则解析工具链**，并提供一致的 iOS/Android/Desktop 阅读体验。
 
-- **应用名称**: PE 小说阅读器
-- **应用包名**: `com.pereader.app`
-- **支持平台**: Android, iOS, Windows, macOS, Linux, Web
+PE Reader is a cross‑platform open‑source novel reader built with Flutter. It targets **readers, open‑source contributors, and Flutter developers**, with a focus on **Legado source protocol compatibility** and a **reusable rule‑driven toolchain**, delivering consistent UX across iOS/Android/Desktop.
 
-## ✨ 特性亮点
+- **包名 / Package**: `com.pereader.app`
+- **平台 / Platforms**: Android, iOS, Windows, macOS, Linux, Web
 
-- 📚 **丰富的书源管理** - 支持多书源切换，兼容 Legado 书源格式
-- 🔍 **智能搜索** - 支持书名和作者搜索，提供热门榜单推荐
-- 📖 **优质阅读体验** - 可自定义字体大小、行高、背景主题
-- 📁 **本地书架** - 阅读进度自动保存，支持多种排序方式
-- ⚡ **章节预加载** - 预加载下一章，切换更流畅
-- 🎨 **Material Design 3** - 现代化的 UI 设计
-- 🔄 **Provider 状态管理** - 响应式数据更新
+## 社区价值 / Community Value
 
-## 技术栈
+- **协议兼容**：实现并验证 Legado 书源格式，便于社区复用成熟书源。
+- **可复用工具链**：规则解析器与书源管理器可迁移到其他内容聚合类应用。
+- **Flutter 参考实现**：展示复杂 UI/UX、离线缓存、多端一致性与状态管理。
+- **跨平台一致性**：同一逻辑与规则在移动端/桌面端/网页端表现一致。
 
-| 类别 | 技术 | 版本 |
+- **Protocol compatibility**: Implements and validates the Legado source schema so existing community sources can be reused.
+- **Reusable toolchain**: Rule parser and source manager can be adapted for other content aggregation apps.
+- **Flutter reference**: Real‑world implementation of complex UI, offline caching, and state management.
+- **Cross‑platform parity**: Consistent behavior across mobile, desktop, and web.
+
+## 协议兼容与工具链 / Protocol Compatibility & Toolchain
+
+- **Legado 书源格式**：兼容社区既有书源生态。
+- **规则引擎**：支持自定义搜索、书籍详情、目录、正文规则。
+- **调试工具**：内置书源调试界面，便于验证规则与定位问题。
+
+- **Legado format support**: Reuse community sources with minimal changes.
+- **Rule engine**: Custom rules for search, book details, chapter list, and content.
+- **Debug tools**: Built‑in source debugging UI to validate rules and troubleshoot.
+
+调试入口 / Debug entry:
+- `lib/ui/screens/source_debug_screen.dart`
+
+## 面向开发者的复用价值 / Developer Reuse Value
+
+- **规则解析器**可独立复用到其他内容抓取场景。
+- **书源管理器**可作为插件化内容聚合框架基础。
+- **跨平台 UI 架构**提供 Flutter 复杂应用的工程参考。
+
+- **Rule parser** can be reused for other rule‑based scraping use cases.
+- **Source manager** can serve as a base for pluggable aggregation frameworks.
+- **Cross‑platform UI architecture** is a practical Flutter reference.
+
+## 主要功能 / Key Features
+
+- Legado 兼容书源 / Legado‑compatible sources
+- 书名/作者搜索 / Search by title or author
+- 阅读样式自定义 / Reader customization (font, spacing, themes)
+- 本地书架与进度 / Local bookshelf with progress tracking
+- 章节预加载 / Chapter prefetching
+- Material Design 3 UI
+- Provider 状态管理 / Provider state management
+
+## 隐私与安全 / Privacy & Security
+
+- 无需账号登录 / No account required
+- 阅读进度与设置仅存本地 / Data stored locally
+- 网络请求仅访问 **用户添加的书源** / Network requests only to **user‑added sources**
+
+## 内容与合规 / Legal & Content Policy
+
+本项目 **不内置书源**，仅提供阅读框架与工具。用户需自行添加书源并遵守相关版权及服务条款。
+
+PE Reader **does not ship with built‑in sources**. It is a framework/tool; users add their own sources and must comply with copyright and terms of service.
+
+## 技术栈 / Tech Stack
+
+| 类别 / Category | 技术 / Tech | 版本 / Version |
 |------|------|------|
-| **框架** | Flutter | >= 3.19.0 |
-| **语言** | Dart | >= 3.4.3 |
-| **状态管理** | Provider | ^6.1.5+1 |
-| **UI框架** | Material Design 3 | - |
-| **HTTP客户端** | http | ^1.2.1 |
-| **本地存储** | shared_preferences | ^2.2.3 |
-| **HTML解析** | html | ^0.15.4 |
-| **JSON路径** | json_path | ^0.7.1 |
+| 框架 / Framework | Flutter | >= 3.19.0 |
+| 语言 / Language | Dart | >= 3.4.3 |
+| 状态管理 / State | Provider | ^6.1.5+1 |
+| UI | Material Design 3 | - |
+| HTTP | http | ^1.2.1 |
+| 本地存储 / Local | shared_preferences | ^2.2.3 |
+| HTML 解析 | html | ^0.15.4 |
+| JSON 路径 | json_path | ^0.7.1 |
 
-## 项目结构
+## 项目结构 / Project Structure
 
 ```
 lib/
-├── models/              # 数据模型
-│   ├── book.dart                 # 书籍模型
-│   ├── book_source.dart          # 书源模型
-│   ├── chapter.dart              # 章节模型
-│   └── chapter_content.dart      # 章节内容模型
-├── services/            # 服务层
-│   ├── api_service.dart          # API请求服务
-│   ├── app_log_service.dart      # 日志服务
-│   ├── reader_settings_service.dart    # 阅读设置服务
-│   ├── source_manager_service.dart     # 书源管理服务
-│   └── storage_service.dart      # 存储服务
-├── controllers/          # 控制器层
-│   └── reader_controller.dart  # 阅读器控制器
-├── utils/               # 工具类
-│   └── rule_parser.dart       # 规则解析器
-└── ui/                  # UI层
-    ├── screens/               # 页面
-    │   ├── search_screen.dart         # 搜索页
-    │   ├── results_screen.dart        # 搜索结果页
-    │   ├── detail_screen.dart         # 书籍详情页
-    │   ├── bookshelf_screen.dart      # 书架页
-    │   ├── reader_screen.dart        # 阅读器页
-    │   ├── settings_screen.dart      # 设置页
-    │   ├── source_management_screen.dart   # 书源管理
-    │   ├── source_edit_screen.dart         # 书源编辑
-    │   ├── source_debug_screen.dart        # 书源调试
-    │   └── app_log_screen.dart             # 应用日志
-    ├── widgets/              # 通用组件
-    └── main_scaffold.dart    # 主脚手架
+  models/
+    book.dart
+    book_source.dart
+    chapter.dart
+    chapter_content.dart
+  services/
+    api_service.dart
+    app_log_service.dart
+    reader_settings_service.dart
+    source_manager_service.dart
+    storage_service.dart
+  controllers/
+    reader_controller.dart
+  utils/
+    rule_parser.dart
+  ui/
+    screens/
+      search_screen.dart
+      results_screen.dart
+      detail_screen.dart
+      bookshelf_screen.dart
+      reader_screen.dart
+      settings_screen.dart
+      source_management_screen.dart
+      source_edit_screen.dart
+      source_debug_screen.dart
+      app_log_screen.dart
+    widgets/
+      main_scaffold.dart
 ```
 
-## 主要功能
+## 快速开始 / Getting Started
 
-- **首页/搜索页**:
-  - 应用口号及简介。
-  - 支持按书名或作者搜索的搜索框。
-  - 主推书籍展示（基于爆更榜榜首）。
-  - 热门榜单展示（巅峰榜、出版榜、爆更榜）。
-- **搜索与详情**:
-  - 根据关键词搜索小说。
-  - 展示搜索结果列表。
-  - 显示书籍详情页，包括封面、书名、作者和简介。
-- **书架管理**:
-  - 将喜欢的书籍添加到本地书架。
-  - 从书架移除书籍（长按操作）。
-  - 支持按“最近阅读”或“最近添加”排序。
-- **阅读体验**:
-  - 显示章节内容的阅读器界面。
-  - 自动保存和恢复上次阅读位置。
-  - 侧边抽屉式的章节列表，用于快速导航。
-  - 阅读设置，可调整字体大小、行高和背景主题。
-
-## 数据来源
-
-本应用的小说数据来源于 **某个网络小说平台** 的公开API接口。
-
-**请注意**：
-- API接口的可用性和返回的数据结构可能会随时发生变化
-- 这可能导致应用部分或全部功能失效
-- 本应用仅供学习和技术交流使用，请勿用于商业目的
-
-## 📝 开发指南
-
-### 代码规范
-
-项目遵循 Flutter 官方代码规范和最佳实践：
-
-- 使用 `flutter_lints` 进行代码检查
-- 所有公共 API 都包含文档注释
-- 遵循有效的命名约定
-- 使用 Provider 进行状态管理
-
-### 日志系统
-
-应用内置完整的日志系统 `AppLogService`，支持：
-- 不同级别的日志记录（debug、info、warning、error）
-- 带标签的分类日志
-- 完整的异常和堆栈信息追踪
-
-### 书源开发
-
-项目兼容 Legado 书源格式，支持：
-- 自定义搜索规则
-- 自定义书籍详情规则
-- 自定义章节目录规则
-- 自定义正文内容规则
-
-详细的书源开发指南请参考 [书源调试页面](lib/ui/screens/source_debug_screen.dart)。
-
-## 🐛 常见问题
-
-### 1. 应用无法启动
-
-确保已正确安装 Flutter SDK：
-```bash
-flutter doctor
-```
-
-### 2. API 请求失败
-
-- 检查网络连接
-- 确认书源地址正确
-- 查看应用日志获取详细错误信息
-
-### 3. 构建失败
-
-```bash
-# 清理构建缓存
-flutter clean
-
-# 重新获取依赖
-flutter pub get
-
-# 重新构建
-flutter build apk --release
-```
-
-## 📄 许可证
-
-本项目仅供学习和交流使用。
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 🚀 快速开始
-
-### 前置要求
+### 前置要求 / Prerequisites
 
 - Flutter SDK >= 3.19.0
 - Dart SDK >= 3.4.3
-- Android Studio / VS Code
+- Android Studio or VS Code
 
-### 安装步骤
+### 安装 / Install
 
-1. 克隆仓库
 ```bash
 git clone https://github.com/ch6vip/pe.git
 cd pe
-```
-
-2. 安装依赖
-```bash
 flutter pub get
 ```
 
-3. 运行应用
-```bash
-# 开发模式
-flutter run
+### 运行 / Run
 
-# 指定设备运行
+```bash
+flutter run
+# or specify a device
 flutter run -d <device-id>
 ```
 
-### 构建发布版本
+### 构建 / Build
 
 ```bash
-# Android APK
 flutter build apk --release
-
-# Android App Bundle (推荐)
 flutter build appbundle --release
-
-# iOS
 flutter build ios --release
 ```
+
+## 贡献 / Contributing
+
+欢迎提交 Issue 和 Pull Request。建议在实现功能前先开 Issue 进行方案对齐。
+
+We welcome issues and pull requests. Please open an issue to align on approach before major work.
+
+## Roadmap / 开发路线图
+
+- 提升桌面端与 Web 端体验一致性 / Improve desktop & web parity
+- 完善规则引擎测试与验证工具 / Expand rule engine tests & validation
+- 增加无障碍与阅读体验选项 / Add accessibility and reading presets
+- 文档与示例书源模板 / Documentation and template sources
+
+## License
+
+MIT License. See `LICENSE`.
