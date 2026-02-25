@@ -326,15 +326,15 @@ class _BookshelfScreenState extends State<BookshelfScreen>
 
 /// 排序按钮组件
 class _SortButton extends StatelessWidget {
-  final String text;
-  final bool isActive;
-  final VoidCallback onTap;
-
   const _SortButton({
     required this.text,
     required this.isActive,
     required this.onTap,
   });
+
+  final String text;
+  final bool isActive;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -362,15 +362,15 @@ class _SortButton extends StatelessWidget {
 
 /// 书籍网格项组件
 class _BookGridItem extends StatelessWidget {
-  final Book book;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-
   const _BookGridItem({
     required this.book,
     required this.onTap,
     required this.onLongPress,
   });
+
+  final Book book;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {

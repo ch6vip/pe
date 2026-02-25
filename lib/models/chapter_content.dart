@@ -2,6 +2,12 @@
 ///
 /// Represents the actual content of a novel chapter, including title and body text
 class ChapterContent {
+  const ChapterContent({
+    required this.title,
+    required this.content,
+    this.itemId,
+  });
+
   /// Chapter title
   final String title;
 
@@ -25,12 +31,6 @@ class ChapterContent {
     r'<article>.*?</article>',
     dotAll: true,
   );
-
-  const ChapterContent({
-    required this.title,
-    required this.content,
-    this.itemId,
-  });
 
   /// Create a ChapterContent instance from a JSON map
   ///

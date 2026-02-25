@@ -9,10 +9,10 @@ import 'package:reader_flutter/services/source_manager_service.dart';
 ///
 /// 封装阅读主题的背景色和文字颜色
 class _ReaderTheme {
+  const _ReaderTheme({required this.backgroundColor, required this.fontColor});
+
   final Color backgroundColor;
   final Color fontColor;
-
-  const _ReaderTheme({required this.backgroundColor, required this.fontColor});
 }
 
 /// 阅读器页面
@@ -26,10 +26,11 @@ class _ReaderTheme {
 /// - 支持 4 种预设主题
 /// - 字号和行高可调节
 class ReaderScreen extends StatefulWidget {
+  const ReaderScreen({super.key, required this.book});
+
   /// 要阅读的书籍
   final Book book;
 
-  const ReaderScreen({super.key, required this.book});
 
   @override
   State<ReaderScreen> createState() => _ReaderScreenState();
@@ -350,15 +351,6 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
 /// 设置面板组件
 class _SettingsPanel extends StatefulWidget {
-  final double fontSize;
-  final double lineHeight;
-  final int themeIndex;
-  final List<_ReaderTheme> themes;
-  final Color fontColor;
-  final ValueChanged<double> onFontSizeChanged;
-  final ValueChanged<double> onLineHeightChanged;
-  final ValueChanged<int> onThemeChanged;
-
   const _SettingsPanel({
     required this.fontSize,
     required this.lineHeight,
@@ -369,6 +361,15 @@ class _SettingsPanel extends StatefulWidget {
     required this.onLineHeightChanged,
     required this.onThemeChanged,
   });
+
+  final double fontSize;
+  final double lineHeight;
+  final int themeIndex;
+  final List<_ReaderTheme> themes;
+  final Color fontColor;
+  final ValueChanged<double> onFontSizeChanged;
+  final ValueChanged<double> onLineHeightChanged;
+  final ValueChanged<int> onThemeChanged;
 
   @override
   State<_SettingsPanel> createState() => _SettingsPanelState();

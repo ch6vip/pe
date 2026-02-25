@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:reader_flutter/services/app_log_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

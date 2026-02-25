@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/reader_settings_service.dart';
-import '../../services/source_manager_service.dart';
 import 'app_log_screen.dart';
 import 'source_management_screen.dart';
 
@@ -55,7 +54,7 @@ class SettingsScreen extends StatelessWidget {
         color: settings.themeBackgroundColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.3),
+          color: Colors.grey.withAlpha(77),
           width: 1,
         ),
       ),
@@ -67,7 +66,7 @@ class SettingsScreen extends StatelessWidget {
             '阅读效果预览',
             style: TextStyle(
               fontSize: 14,
-              color: settings.themeTextColor.withOpacity(0.6),
+              color: settings.themeTextColor.withAlpha(153),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -278,7 +277,7 @@ class SettingsScreen extends StatelessWidget {
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Theme.of(context).dividerColor.withOpacity(0.3),
+              color: Theme.of(context).dividerColor.withAlpha(77),
               width: 1,
             ),
           ),
@@ -323,7 +322,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           SliderTheme(
-            data: SliderThemeData(
+            data: const SliderThemeData(
               trackHeight: 4,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),

@@ -10,6 +10,8 @@ import 'package:reader_flutter/services/app_log_service.dart';
 ///
 /// Encapsulates error information during API calls
 class ApiException implements Exception {
+  const ApiException(this.message, {this.statusCode, this.originalError});
+
   /// Error message
   final String message;
 
@@ -19,7 +21,6 @@ class ApiException implements Exception {
   /// Original exception if any
   final Object? originalError;
 
-  const ApiException(this.message, {this.statusCode, this.originalError});
 
   @override
   String toString() =>
@@ -30,6 +31,8 @@ class ApiException implements Exception {
 ///
 /// Handles communication with backend API, providing book search, details, chapter list and content retrieval
 class ApiService {
+  ApiService({http.Client? client}) : _client = client ?? http.Client();
+
   /// HTTP 请求超时时间
   static const Duration _requestTimeout = Duration(seconds: 15);
 
@@ -39,7 +42,6 @@ class ApiService {
   /// 日志服务
   final AppLogService _logService = AppLogService();
 
-  ApiService({http.Client? client}) : _client = client ?? http.Client();
 
   // ==================== 公共方法 ====================
 

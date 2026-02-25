@@ -142,10 +142,10 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+        color: Theme.of(context).colorScheme.primaryContainer.withAlpha(77),
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).dividerColor.withOpacity(0.3),
+            color: Theme.of(context).dividerColor.withAlpha(77),
             width: 1,
           ),
         ),
@@ -162,7 +162,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
           Container(
             width: 1,
             height: 40,
-            color: Theme.of(context).dividerColor.withOpacity(0.3),
+            color: Theme.of(context).dividerColor.withAlpha(77),
           ),
           _buildStatItem(
             icon: Icons.check_circle,
@@ -173,7 +173,7 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
           Container(
             width: 1,
             height: 40,
-            color: Theme.of(context).dividerColor.withOpacity(0.3),
+            color: Theme.of(context).dividerColor.withAlpha(77),
           ),
           _buildStatItem(
             icon: Icons.block,
@@ -329,8 +329,9 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
             onPressed: () async {
               final success =
                   await sourceService.deleteSource(source.bookSourceUrl);
+              if (!mounted) return;
               Navigator.pop(dialogContext);
-              if (success && mounted) {
+              if (success) {
                 ScaffoldMessenger.of(
                   context,
                 ).showSnackBar(const SnackBar(content: Text('书源已删除')));
@@ -423,29 +424,28 @@ class _SourceManagementScreenState extends State<SourceManagementScreen> {
                   url,
                 );
 
+                if (!mounted) return;
+
                 // 清除加载提示
                 ScaffoldMessenger.of(context).clearSnackBars();
 
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('成功导入 $importedCount 个书源'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('成功导入 $importedCount 个书源'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
               } catch (e) {
+                if (!mounted) return;
                 // 清除加载提示
                 ScaffoldMessenger.of(context).clearSnackBars();
 
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('导入失败: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('导入失败: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             child: const Text('确定'),

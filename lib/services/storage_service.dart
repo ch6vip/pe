@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:reader_flutter/models/book.dart';
 import 'package:reader_flutter/models/chapter_content.dart';
 import 'package:reader_flutter/services/app_log_service.dart';
@@ -9,13 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// Encapsulates error information during local storage operations
 class StorageException implements Exception {
+  const StorageException(this.message, {this.originalError});
+
   /// Error message
   final String message;
 
   /// Original exception if any
   final Object? originalError;
-
-  const StorageException(this.message, {this.originalError});
 
   @override
   String toString() => 'StorageException: $message';
@@ -29,10 +28,10 @@ enum SortOrder {
   /// Sort by add time
   byAddTime('byAddTime');
 
+  const SortOrder(this.value);
+
   /// 存储使用的字符串值
   final String value;
-
-  const SortOrder(this.value);
 
   /// 从字符串解析排序方式
   static SortOrder fromString(String? value) {

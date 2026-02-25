@@ -17,10 +17,11 @@ import 'source_debug_screen.dart';
 /// - 表单验证：确保必填字段不为空
 /// - 调试功能：编辑模式下可直接进入调试
 class SourceEditScreen extends StatefulWidget {
+  const SourceEditScreen({super.key, this.source});
+
   /// 要编辑的书源，如果为 null 则表示新建模式
   final BookSource? source;
 
-  const SourceEditScreen({super.key, this.source});
 
   @override
   State<SourceEditScreen> createState() => _SourceEditScreenState();

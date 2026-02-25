@@ -7,10 +7,11 @@ import 'package:reader_flutter/services/storage_service.dart';
 ///
 /// 展示书籍的详细信息，提供加入书架和开始阅读功能
 class DetailScreen extends StatefulWidget {
+  const DetailScreen({super.key, required this.book});
+
   /// 要展示的书籍
   final Book book;
 
-  const DetailScreen({super.key, required this.book});
 
   @override
   State<DetailScreen> createState() => _DetailScreenState();

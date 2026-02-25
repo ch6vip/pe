@@ -16,12 +16,6 @@ import 'package:reader_flutter/services/source_manager_service.dart';
 /// - Next chapter preloading
 /// - Reading progress management
 class ReaderController extends ChangeNotifier {
-  final ApiService _apiService;
-  final StorageService _storageService;
-  final AppLogService _logService;
-  final SourceManagerService _sourceManagerService;
-  final Book book;
-
   ReaderController({
     required this.book,
     required SourceManagerService sourceManagerService,
@@ -32,6 +26,12 @@ class ReaderController extends ChangeNotifier {
         _storageService = storageService ?? StorageService(),
         _logService = logService ?? AppLogService(),
         _sourceManagerService = sourceManagerService;
+
+  final ApiService _apiService;
+  final StorageService _storageService;
+  final AppLogService _logService;
+  final SourceManagerService _sourceManagerService;
+  final Book book;
 
   // ==================== 状态变量 ====================
 

@@ -5,6 +5,90 @@ import 'dart:convert';
 /// Fully compatible with the Legado 3.0 standard format for book sources.
 /// Includes basic info, advanced settings, and parsing rules.
 class BookSource {
+  const BookSource({
+    required this.bookSourceUrl,
+    required this.bookSourceName,
+    this.bookSourceGroup,
+    this.bookSourceType = 0,
+    this.bookUrlPattern,
+    this.customOrder = 0,
+    this.enabled = true,
+    this.enabledExplore = true,
+    this.bookSourceComment,
+    this.jsLib,
+    this.enabledCookieJar = true,
+    this.concurrentRate,
+    this.header,
+    this.loginUrl,
+    this.loginUi,
+    this.loginCheckJs,
+    this.coverDecodeJs,
+    this.variableComment,
+    this.lastUpdateTime = 0,
+    this.respondTime = 180000,
+    this.weight = 0,
+    this.exploreUrl,
+    this.exploreScreen,
+    this.searchUrl,
+    this.ruleSearch,
+    this.ruleExplore,
+    this.ruleBookInfo,
+    this.ruleToc,
+    this.ruleContent,
+  });
+
+  /// Create a BookSource instance from a JSON map
+  factory BookSource.fromJson(Map<String, dynamic> json) {
+    return BookSource(
+      bookSourceUrl: json['bookSourceUrl'] as String? ?? '',
+      bookSourceName: json['bookSourceName'] as String? ?? '未命名书源',
+      bookSourceGroup: json['bookSourceGroup'] as String?,
+      bookSourceType: json['bookSourceType'] as int? ?? 0,
+      bookUrlPattern: json['bookUrlPattern'] as String?,
+      customOrder: json['customOrder'] as int? ?? 0,
+      enabled: json['enabled'] as bool? ?? true,
+      enabledExplore: json['enabledExplore'] as bool? ?? true,
+      bookSourceComment: json['bookSourceComment'] as String?,
+      jsLib: json['jsLib'] as String?,
+      enabledCookieJar: json['enabledCookieJar'] as bool?,
+      concurrentRate: json['concurrentRate'] as String?,
+      header: json['header'] as String?,
+      loginUrl: json['loginUrl'] as String?,
+      loginUi: json['loginUi'] as String?,
+      loginCheckJs: json['loginCheckJs'] as String?,
+      coverDecodeJs: json['coverDecodeJs'] as String?,
+      variableComment: json['variableComment'] as String?,
+      lastUpdateTime: json['lastUpdateTime'] as int? ?? 0,
+      respondTime: json['respondTime'] as int? ?? 180000,
+      weight: json['weight'] as int? ?? 0,
+      exploreUrl: json['exploreUrl'] as String?,
+      exploreScreen: json['exploreScreen'] as String?,
+      searchUrl: json['searchUrl'] as String?,
+      ruleSearch: json['ruleSearch'] != null
+          ? SearchRule.fromJson(json['ruleSearch'] as Map<String, dynamic>)
+          : null,
+      ruleExplore: json['ruleExplore'] != null
+          ? ExploreRule.fromJson(json['ruleExplore'] as Map<String, dynamic>)
+          : null,
+      ruleBookInfo: json['ruleBookInfo'] != null
+          ? BookInfoRule.fromJson(json['ruleBookInfo'] as Map<String, dynamic>)
+          : null,
+      ruleToc: json['ruleToc'] != null
+          ? TocRule.fromJson(json['ruleToc'] as Map<String, dynamic>)
+          : null,
+      ruleContent: json['ruleContent'] != null
+          ? ContentRule.fromJson(json['ruleContent'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  /// Create a BookSource instance from a JSON string
+  factory BookSource.fromJsonString(String jsonString) {
+    final json = jsonDecode(jsonString) as Map<String, dynamic>;
+    return BookSource.fromJson(json);
+  }
+
+
   /// Basic info fields
 
   /// Unique book source identifier (URL, including http/https)
@@ -98,89 +182,6 @@ class BookSource {
 
   /// Content rule
   final ContentRule? ruleContent;
-
-  const BookSource({
-    required this.bookSourceUrl,
-    required this.bookSourceName,
-    this.bookSourceGroup,
-    this.bookSourceType = 0,
-    this.bookUrlPattern,
-    this.customOrder = 0,
-    this.enabled = true,
-    this.enabledExplore = true,
-    this.bookSourceComment,
-    this.jsLib,
-    this.enabledCookieJar = true,
-    this.concurrentRate,
-    this.header,
-    this.loginUrl,
-    this.loginUi,
-    this.loginCheckJs,
-    this.coverDecodeJs,
-    this.variableComment,
-    this.lastUpdateTime = 0,
-    this.respondTime = 180000,
-    this.weight = 0,
-    this.exploreUrl,
-    this.exploreScreen,
-    this.searchUrl,
-    this.ruleSearch,
-    this.ruleExplore,
-    this.ruleBookInfo,
-    this.ruleToc,
-    this.ruleContent,
-  });
-
-  /// Create a BookSource instance from a JSON map
-  factory BookSource.fromJson(Map<String, dynamic> json) {
-    return BookSource(
-      bookSourceUrl: json['bookSourceUrl'] as String? ?? '',
-      bookSourceName: json['bookSourceName'] as String? ?? '未命名书源',
-      bookSourceGroup: json['bookSourceGroup'] as String?,
-      bookSourceType: json['bookSourceType'] as int? ?? 0,
-      bookUrlPattern: json['bookUrlPattern'] as String?,
-      customOrder: json['customOrder'] as int? ?? 0,
-      enabled: json['enabled'] as bool? ?? true,
-      enabledExplore: json['enabledExplore'] as bool? ?? true,
-      bookSourceComment: json['bookSourceComment'] as String?,
-      jsLib: json['jsLib'] as String?,
-      enabledCookieJar: json['enabledCookieJar'] as bool?,
-      concurrentRate: json['concurrentRate'] as String?,
-      header: json['header'] as String?,
-      loginUrl: json['loginUrl'] as String?,
-      loginUi: json['loginUi'] as String?,
-      loginCheckJs: json['loginCheckJs'] as String?,
-      coverDecodeJs: json['coverDecodeJs'] as String?,
-      variableComment: json['variableComment'] as String?,
-      lastUpdateTime: json['lastUpdateTime'] as int? ?? 0,
-      respondTime: json['respondTime'] as int? ?? 180000,
-      weight: json['weight'] as int? ?? 0,
-      exploreUrl: json['exploreUrl'] as String?,
-      exploreScreen: json['exploreScreen'] as String?,
-      searchUrl: json['searchUrl'] as String?,
-      ruleSearch: json['ruleSearch'] != null
-          ? SearchRule.fromJson(json['ruleSearch'] as Map<String, dynamic>)
-          : null,
-      ruleExplore: json['ruleExplore'] != null
-          ? ExploreRule.fromJson(json['ruleExplore'] as Map<String, dynamic>)
-          : null,
-      ruleBookInfo: json['ruleBookInfo'] != null
-          ? BookInfoRule.fromJson(json['ruleBookInfo'] as Map<String, dynamic>)
-          : null,
-      ruleToc: json['ruleToc'] != null
-          ? TocRule.fromJson(json['ruleToc'] as Map<String, dynamic>)
-          : null,
-      ruleContent: json['ruleContent'] != null
-          ? ContentRule.fromJson(json['ruleContent'] as Map<String, dynamic>)
-          : null,
-    );
-  }
-
-  /// Create a BookSource instance from a JSON string
-  factory BookSource.fromJsonString(String jsonString) {
-    final json = jsonDecode(jsonString) as Map<String, dynamic>;
-    return BookSource.fromJson(json);
-  }
 
   /// Convert the BookSource instance to a JSON map
   Map<String, dynamic> toJson() {
@@ -306,8 +307,9 @@ class BookSource {
 
   /// Add groups
   BookSource addGroup(String groups) {
-    final currentGroups =
-        bookSourceGroup?.split(',')?.map((g) => g.trim())?.toList() ?? [];
+    final currentGroups = (bookSourceGroup == null || bookSourceGroup!.isEmpty)
+        ? <String>[]
+        : bookSourceGroup!.split(',').map((g) => g.trim()).toList();
     final newGroups = groups.split(',').map((g) => g.trim()).toList();
     final allGroups = {...currentGroups, ...newGroups}.toList();
     return copyWith(bookSourceGroup: allGroups.join(','));
@@ -358,14 +360,14 @@ class BookSource {
       weight: 0,
       searchUrl: '/search?key={key}',
       // Search rule configuration
-      ruleSearch: SearchRule(
+      ruleSearch: const SearchRule(
         bookList: 'class.book-item@tag.li',
         name: 'text',
         author: 'class.author@text',
         bookUrl: 'tag.a@href',
       ),
       // Book info rule configuration
-      ruleBookInfo: BookInfoRule(
+      ruleBookInfo: const BookInfoRule(
         name: 'text',
         author: 'class.author@text',
         intro: 'class.intro@text',
@@ -374,13 +376,13 @@ class BookSource {
         coverUrl: 'class.cover@src',
       ),
       // Table of contents rule configuration
-      ruleToc: TocRule(
+      ruleToc: const TocRule(
         chapterList: 'class.chapter@tag.a',
         chapterName: 'text',
         chapterUrl: 'href',
       ),
       // Content rule configuration
-      ruleContent: ContentRule(
+      ruleContent: const ContentRule(
         content: 'id.content@textNodes',
         title: 'class.chapter-title@text',
       ),
@@ -390,17 +392,6 @@ class BookSource {
 
 /// Base class for book list rules
 abstract class BookListRule {
-  final String? bookList;
-  final String? name;
-  final String? author;
-  final String? intro;
-  final String? kind;
-  final String? lastChapter;
-  final String? updateTime;
-  final String? bookUrl;
-  final String? coverUrl;
-  final String? wordCount;
-
   const BookListRule({
     this.bookList,
     this.name,
@@ -413,6 +404,18 @@ abstract class BookListRule {
     this.coverUrl,
     this.wordCount,
   });
+
+
+  final String? bookList;
+  final String? name;
+  final String? author;
+  final String? intro;
+  final String? kind;
+  final String? lastChapter;
+  final String? updateTime;
+  final String? bookUrl;
+  final String? coverUrl;
+  final String? wordCount;
 
   Map<String, dynamic> toJson() {
     return {
@@ -432,8 +435,6 @@ abstract class BookListRule {
 
 /// Search rule
 class SearchRule extends BookListRule {
-  final String? checkKeyWord;
-
   const SearchRule({
     this.checkKeyWord,
     super.bookList,
@@ -464,6 +465,9 @@ class SearchRule extends BookListRule {
     );
   }
 
+
+  final String? checkKeyWord;
+
   @override
   Map<String, dynamic> toJson() {
     final json = super.toJson();
@@ -487,6 +491,7 @@ class ExploreRule extends BookListRule {
     super.wordCount,
   });
 
+
   factory ExploreRule.fromJson(Map<String, dynamic> json) {
     return ExploreRule(
       bookList: json['bookList'] as String?,
@@ -505,19 +510,6 @@ class ExploreRule extends BookListRule {
 
 /// Book detail rule
 class BookInfoRule {
-  final String? init;
-  final String? name;
-  final String? author;
-  final String? intro;
-  final String? kind;
-  final String? lastChapter;
-  final String? updateTime;
-  final String? coverUrl;
-  final String? tocUrl;
-  final String? wordCount;
-  final String? canReName;
-  final String? downloadUrls;
-
   const BookInfoRule({
     this.init,
     this.name,
@@ -550,6 +542,20 @@ class BookInfoRule {
     );
   }
 
+
+  final String? init;
+  final String? name;
+  final String? author;
+  final String? intro;
+  final String? kind;
+  final String? lastChapter;
+  final String? updateTime;
+  final String? coverUrl;
+  final String? tocUrl;
+  final String? wordCount;
+  final String? canReName;
+  final String? downloadUrls;
+
   Map<String, dynamic> toJson() {
     return {
       'init': init,
@@ -570,17 +576,6 @@ class BookInfoRule {
 
 /// Table of contents rule (TocRule in Legado)
 class TocRule {
-  final String? preUpdateJs;
-  final String? chapterList;
-  final String? chapterName;
-  final String? chapterUrl;
-  final String? formatJs;
-  final String? isVolume;
-  final String? isVip;
-  final String? isPay;
-  final String? updateTime;
-  final String? nextTocUrl;
-
   const TocRule({
     this.preUpdateJs,
     this.chapterList,
@@ -609,6 +604,18 @@ class TocRule {
     );
   }
 
+
+  final String? preUpdateJs;
+  final String? chapterList;
+  final String? chapterName;
+  final String? chapterUrl;
+  final String? formatJs;
+  final String? isVolume;
+  final String? isVip;
+  final String? isPay;
+  final String? updateTime;
+  final String? nextTocUrl;
+
   Map<String, dynamic> toJson() {
     return {
       'preUpdateJs': preUpdateJs,
@@ -627,16 +634,6 @@ class TocRule {
 
 /// Content rule
 class ContentRule {
-  final String? content;
-  final String? title;
-  final String? nextContentUrl;
-  final String? webJs;
-  final String? sourceRegex;
-  final String? replaceRegex;
-  final String? imageStyle;
-  final String? imageDecode;
-  final String? payAction;
-
   const ContentRule({
     this.content,
     this.title,
@@ -662,6 +659,17 @@ class ContentRule {
       payAction: json['payAction'] as String?,
     );
   }
+
+
+  final String? content;
+  final String? title;
+  final String? nextContentUrl;
+  final String? webJs;
+  final String? sourceRegex;
+  final String? replaceRegex;
+  final String? imageStyle;
+  final String? imageDecode;
+  final String? payAction;
 
   Map<String, dynamic> toJson() {
     return {

@@ -7,10 +7,11 @@ import 'package:flutter/material.dart';
 /// 收集和管理应用运行时的日志信息
 /// 包括调试信息、警告和错误
 class AppLogService {
+  AppLogService._internal();
+  factory AppLogService() => _instance;
+
   /// 单例模式
   static final AppLogService _instance = AppLogService._internal();
-  factory AppLogService() => _instance;
-  AppLogService._internal();
 
   /// 日志条目列表
   final List<LogEntry> _logs = [];
@@ -191,26 +192,26 @@ enum LogLevel {
   warning('警告', Icons.warning_outlined, Colors.orange),
   error('错误', Icons.error_outline, Colors.red);
 
+  const LogLevel(this.displayName, this.icon, this.color);
+
   final String displayName;
   final IconData icon;
   final Color color;
-
-  const LogLevel(this.displayName, this.icon, this.color);
 }
 
 /// 日志条目
 class LogEntry {
-  final LogLevel level;
-  final String message;
-  final String tag;
-  final DateTime timestamp;
-
   const LogEntry({
     required this.level,
     required this.message,
     required this.tag,
     required this.timestamp,
   });
+
+  final LogLevel level;
+  final String message;
+  final String tag;
+  final DateTime timestamp;
 
   @override
   String toString() {

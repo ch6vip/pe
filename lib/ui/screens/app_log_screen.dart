@@ -235,7 +235,7 @@ class _AppLogScreenState extends State<AppLogScreen>
         ),
         selected: isSelected,
         onSelected: (_) => onTap(),
-        backgroundColor: level?.color.withOpacity(0.1) ?? Colors.grey.shade100,
+        backgroundColor: level?.color.withAlpha(26) ?? Colors.grey.shade100,
         selectedColor: level?.color ?? Colors.grey,
         labelStyle: TextStyle(
           color:
@@ -397,9 +397,9 @@ class _AppLogScreenState extends State<AppLogScreen>
 
 /// 日志条目组件
 class _LogEntryWidget extends StatelessWidget {
-  final LogEntry log;
-
   const _LogEntryWidget({required this.log});
+
+  final LogEntry log;
 
   @override
   Widget build(BuildContext context) {
@@ -409,10 +409,10 @@ class _LogEntryWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: log.level.color.withOpacity(0.3)),
+        border: Border.all(color: log.level.color.withAlpha(77)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -432,7 +432,7 @@ class _LogEntryWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: log.level.color.withOpacity(0.1),
+                  color: log.level.color.withAlpha(26),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

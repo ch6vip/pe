@@ -2,6 +2,13 @@
 ///
 /// Represents chapter information for a novel, including ID and title
 class Chapter {
+  const Chapter({
+    required this.itemId,
+    required this.title,
+    this.volumeName,
+    this.wordNumber,
+  });
+
   /// Unique chapter identifier
   final String itemId;
 
@@ -13,13 +20,6 @@ class Chapter {
 
   /// Word count (optional)
   final int? wordNumber;
-
-  const Chapter({
-    required this.itemId,
-    required this.title,
-    this.volumeName,
-    this.wordNumber,
-  });
 
   /// Create a Chapter instance from a JSON map
   ///

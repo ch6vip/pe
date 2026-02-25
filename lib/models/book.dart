@@ -2,6 +2,20 @@
 ///
 /// Represents basic information about a novel, including ID, metadata, and reading status
 class Book {
+  const Book({
+    required this.id,
+    required this.name,
+    required this.author,
+    required this.coverUrl,
+    required this.description,
+    this.bookSourceUrl,
+    this.tocUrl,
+    this.originName,
+    this.addTime,
+    this.lastReadTime,
+    this.lastReadChapterTitle,
+  });
+
   /// Unique book identifier
   final String id;
 
@@ -39,20 +53,7 @@ class Book {
   static const String _defaultCoverUrl =
       'https://p3-novel.byteimg.com/origin/novel-cover/0f5032c8338ecbe9173b620a934755a5';
 
-  const Book({
-    required this.id,
-    required this.name,
-    required this.author,
-    required this.coverUrl,
-    required this.description,
-    this.bookSourceUrl,
-    this.tocUrl,
-    this.originName,
-    this.addTime,
-    this.lastReadTime,
-    this.lastReadChapterTitle,
-  });
-
+  
   /// 从 JSON Map 创建 Book 实例
   ///
   /// 支持多种 API 返回格式的字段名映射：

@@ -10,10 +10,11 @@ import 'package:reader_flutter/ui/screens/detail_screen.dart';
 ///
 /// 显示搜索关键词匹配的书籍列表
 class ResultsScreen extends StatefulWidget {
+  const ResultsScreen({super.key, required this.query});
+
   /// 搜索关键词
   final String query;
 
-  const ResultsScreen({super.key, required this.query});
 
   @override
   State<ResultsScreen> createState() => _ResultsScreenState();
@@ -193,10 +194,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
 /// 书籍结果卡片组件
 class _BookResultCard extends StatelessWidget {
+  const _BookResultCard({required this.book, required this.onTap});
+
   final Book book;
   final VoidCallback onTap;
-
-  const _BookResultCard({required this.book, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

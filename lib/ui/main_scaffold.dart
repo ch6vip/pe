@@ -4,17 +4,17 @@ import 'package:reader_flutter/ui/screens/search_screen.dart';
 import 'package:reader_flutter/ui/screens/settings_screen.dart';
 
 class _NavigationItem {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final Widget screen;
-
   const _NavigationItem({
     required this.icon,
     required this.activeIcon,
     required this.label,
     required this.screen,
   });
+
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final Widget screen;
 }
 
 /// 主脚手架组件

@@ -7,10 +7,11 @@ import '../../services/source_debug_service.dart';
 ///
 /// 提供书源规则的调试功能，实时显示调试日志
 class SourceDebugScreen extends StatefulWidget {
+  const SourceDebugScreen({super.key, required this.source});
+
   /// 要调试的书源
   final BookSource source;
 
-  const SourceDebugScreen({super.key, required this.source});
 
   @override
   State<SourceDebugScreen> createState() => _SourceDebugScreenState();

@@ -6,6 +6,13 @@ import 'package:reader_flutter/ui/screens/detail_screen.dart';
 ///
 /// 用于展示榜单列表，支持不同排名的样式区分
 class RankingCard extends StatelessWidget {
+  const RankingCard({
+    super.key,
+    required this.title,
+    required this.books,
+    this.maxItems = 10,
+  });
+
   /// 榜单标题
   final String title;
 
@@ -15,12 +22,6 @@ class RankingCard extends StatelessWidget {
   /// 最大显示数量
   final int maxItems;
 
-  const RankingCard({
-    super.key,
-    required this.title,
-    required this.books,
-    this.maxItems = 10,
-  });
 
   /// 排名颜色配置
   static const List<Color> _rankColors = [
@@ -87,17 +88,18 @@ class RankingCard extends StatelessWidget {
 
 /// 排行榜项目组件
 class _RankingItem extends StatelessWidget {
-  final Book book;
-  final int rank;
-  final bool isLast;
-  final VoidCallback onTap;
-
   const _RankingItem({
     required this.book,
     required this.rank,
     required this.isLast,
     required this.onTap,
   });
+
+  final Book book;
+  final int rank;
+  final bool isLast;
+  final VoidCallback onTap;
+
 
   @override
   Widget build(BuildContext context) {
