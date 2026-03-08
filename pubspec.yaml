@@ -1,13 +1,13 @@
-name: PE Reader
+name: reader_flutter
 
 description: A cross-platform open-source novel reader built with Flutter.
 
 publish_to: 'none' # Private project
 
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
-  sdk: '>=3.4.3 <4.0.0'
+  sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
   flutter:
