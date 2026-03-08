@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:reader_flutter/core/storage/preferences.dart';
+import 'package:reader_flutter/core/logger/logger.dart';
 import '../models/book_source.dart';
 
 /// Book source manager service
 ///
 /// Handles CRUD operations for book sources and local persistence.
-/// Uses shared_preferences for local storage.
+/// Uses Preferences for local storage.
 class SourceManagerService extends ChangeNotifier {
   static const String _sourcesKey = 'book_sources';
   static const String _lastUpdateTimeKey = 'sources_last_update';
@@ -15,6 +16,8 @@ class SourceManagerService extends ChangeNotifier {
   List<BookSource> _sources = [];
   bool _isLoading = false;
   String? _errorMessage;
+
+  final AppLogger _log = AppLogger();
 
   /// Get all book sources (read-only)
   List<BookSource> get sources => List.unmodifiable(_sources);
@@ -44,22 +47,18 @@ class SourceManagerService extends ChangeNotifier {
   Future<void> _loadSources() async {
     _setLoading(true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final sourcesJson = prefs.getString(_sourcesKey);
+      final sources = await Preferences.getSources();
+      _sources = sources;
 
-      if (sourcesJson != null && sourcesJson.isNotEmpty) {
-        final List<dynamic> sourcesList = json.decode(sourcesJson);
-        _sources = sourcesList
-            .map((json) => BookSource.fromJson(json as Map<String, dynamic>))
-            .toList();
-      } else {
-        // If there's no local data, create a default demo source.
+      // 确保至少有一个书源
+      if (_sources.isEmpty) {
         _sources = [BookSource.createDemoSource()];
         await _saveSources();
       }
 
       _clearError();
     } catch (e) {
+      _log.e('加载书源数据失败', error: e);
       _setError('加载书源数据失败: $e');
       // Fall back to a demo source to keep the app usable.
       _sources = [BookSource.createDemoSource()];
@@ -71,17 +70,11 @@ class SourceManagerService extends ChangeNotifier {
   /// Save sources to local storage
   Future<void> _saveSources() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final sourcesJson = json.encode(
-        _sources.map((source) => source.toJson()).toList(),
-      );
-      await prefs.setString(_sourcesKey, sourcesJson);
-      await prefs.setInt(
-        _lastUpdateTimeKey,
-        DateTime.now().millisecondsSinceEpoch,
-      );
+      await Preferences.setSources(_sources);
+      await Preferences.setSourcesLastUpdateTime(DateTime.now().millisecondsSinceEpoch);
       _clearError();
     } catch (e) {
+      _log.e('保存书源数据失败', error: e);
       _setError('保存书源数据失败: $e');
       rethrow;
     }
