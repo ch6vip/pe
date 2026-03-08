@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:reader_flutter/core/utils/debouncer.dart';
 import 'package:reader_flutter/ui/screens/results_screen.dart';
 
 /// Search screen
@@ -15,6 +16,7 @@ class _SearchScreenState extends State<SearchScreen>
     with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final Debouncer _debouncer = Debouncer(delay: Duration(milliseconds: 500));
 
   @override
   bool get wantKeepAlive => true;
@@ -22,6 +24,7 @@ class _SearchScreenState extends State<SearchScreen>
   @override
   void dispose() {
     // 释放资源，防止内存泄漏
+    _debouncer.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -53,6 +56,16 @@ class _SearchScreenState extends State<SearchScreen>
       context,
       MaterialPageRoute(builder: (context) => ResultsScreen(query: query)),
     );
+  }
+
+  /// 处理搜索输入变化（带防抖）
+  void _onSearchChanged(String query) {
+    _debouncer.run(() {
+      if (query.trim().length >= 2) {
+        // 可选：实时搜索，但这里仅作示例
+        // _performSearch();
+      }
+    });
   }
 
   @override
@@ -166,6 +179,7 @@ class _SearchScreenState extends State<SearchScreen>
                   border: InputBorder.none,
                 ),
                 textInputAction: TextInputAction.search,
+                onChanged: _onSearchChanged,
                 onSubmitted: (_) => _performSearch(),
               ),
             ),
