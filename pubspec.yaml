@@ -1,28 +1,89 @@
-name: reader_flutter
-description: "一款基于 Flutter 开发的跨平台小说阅读器应用，支持多书源管理和自定义阅读设置。"
-publish_to: 'none'
+name: PE Reader
+
+description: A cross-platform open-source novel reader built with Flutter.
+
+publish_to: 'none' # Private project
+
 version: 1.0.0+1
 
 environment:
   sdk: '>=3.4.3 <4.0.0'
 
 dependencies:
-  cupertino_icons: ^1.0.6
   flutter:
     sdk: flutter
-  html: ^0.15.4
-  http: ^1.2.1
-  json_path: ^0.7.1
+
+  # UI
+  flutter_screenutil: ^5.9.0 # 屏幕适配
+  cupertino_icons: ^1.0.6
+
+  # 状态管理
   provider: ^6.1.5+1
+
+  # 网络
+  http: ^1.2.1
+  dio: ^5.4.0 # 高级 HTTP 客户端
+
+  # 本地存储
   shared_preferences: ^2.2.3
+  hive: ^2.2.3 # 快速本地数据库 (可选)
+  hive_flutter: ^1.1.0
+
+  # HTML 解析
+  html: ^0.15.4
+
+  # JSON 处理
+  json_path: ^0.7.1
+
+  # 工具
+  logger: ^2.0.0 # 结构化日志
+  either_dart: ^1.0.0 # 错误处理
+  url_launcher: ^6.2.2 # 打开外部链接
+  path_provider: ^2.1.2 # 获取系统路径
+  permission_handler: ^11.3.1 # 权限管理
+
+  # 图片缓存
+  cached_network_image: ^3.3.0
+
+  # 国际化
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.18.1
+
+  # 错误监控
+  sentry_flutter: ^8.0.0
 
 dev_dependencies:
-  flutter_lints: ^3.0.0
   flutter_test:
     sdk: flutter
+
+  # 测试
+  mockito: ^5.4.2
+  build_runner: ^2.4.6
+  network_image_mock: ^2.1.1
+
+  # 代码质量
+  flutter_lints: ^3.0.0
+  dart_code_metrics: ^6.0.0
+  custom_lint: ^0.5.0
+
+  # 代码生成
+  freezed: ^2.4.0
+  json_serializable: ^6.7.1
 
 flutter:
   uses-material-design: true
 
-  assets:
-    - assets/
+  # 应用图标
+  # assets:
+  #   - assets/icons/
+
+  # 字体
+  # fonts:
+  #   - family: NotoSansSC
+  #     fonts:
+  #       - asset: fonts/NotoSansSC-Regular.ttf
+
+  # 模块化 (如果需要)
+  # module:
+  #   androidX: true
