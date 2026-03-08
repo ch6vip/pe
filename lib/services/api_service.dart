@@ -1,31 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:reader_flutter/core/errors/exceptions.dart';
+import 'package:reader_flutter/core/logger/logger.dart';
 import 'package:reader_flutter/models/book.dart';
 import 'package:reader_flutter/models/book_source.dart';
 import 'package:reader_flutter/models/chapter.dart';
 import 'package:reader_flutter/models/chapter_content.dart';
-import 'package:reader_flutter/services/app_log_service.dart';
-
-/// API request exception
-///
-/// Encapsulates error information during API calls
-class ApiException implements Exception {
-  const ApiException(this.message, {this.statusCode, this.originalError});
-
-  /// Error message
-  final String message;
-
-  /// HTTP status code if any
-  final int? statusCode;
-
-  /// Original exception if any
-  final Object? originalError;
-
-
-  @override
-  String toString() =>
-      'ApiException: $message${statusCode != null ? ' (status code: $statusCode)' : ''}';
-}
 
 /// API service class
 ///
@@ -40,7 +20,7 @@ class ApiService {
   final http.Client _client;
 
   /// 日志服务
-  final AppLogService _logService = AppLogService();
+  final AppLogger _logService = AppLogger();
 
 
   // ==================== 公共方法 ====================
@@ -50,19 +30,14 @@ class ApiService {
   Future<http.Response> fetchRaw(String url) async {
     final trimmed = url.trim();
     if (trimmed.isEmpty) {
-      throw const ApiException('URL 不能为空');
+      throw const ValidationException('URL 不能为空');
     }
     try {
       return await _getWithTimeout(Uri.parse(trimmed));
     } catch (e, stackTrace) {
-      _logService.error(
-        '获取原始响应失败：$trimmed',
-        error: e,
-        stackTrace: stackTrace,
-        tag: 'ApiService',
-      );
-      if (e is ApiException) rethrow;
-      throw ApiException('获取原始响应失败', originalError: e);
+      _logService.e('获取原始响应失败：$trimmed', error: e);
+      if (e is AppException) rethrow;
+      throw NetworkException('获取原始响应失败', originalError: e);
     }
   }
 
@@ -91,8 +66,8 @@ class ApiService {
 
     final searchUrl = source.searchUrl?.trim() ?? '';
     if (searchUrl.isEmpty) {
-      _logService.error('书源未配置搜索地址', tag: 'ApiService');
-      throw const ApiException('搜索地址缺失');
+      _logService.e('书源未配置搜索地址');
+      throw const ValidationException('搜索地址缺失');
     }
 
     final normalizedPage = page < 1 ? 1 : page;
@@ -103,35 +78,30 @@ class ApiService {
       normalizedPage,
     );
 
-    _logService.info('搜索书籍：$keyword (第$normalizedPage页)', tag: 'ApiService');
+    _logService.i('搜索书籍：$keyword (第$normalizedPage页)');
 
     try {
       final response = await _getWithTimeout(Uri.parse(requestUrl));
 
       if (response.statusCode != 200) {
-        _logService.error(
-          '搜索书籍失败，状态码：${response.statusCode}',
-          tag: 'ApiService',
+        _logService.e('搜索书籍失败，状态码：${response.statusCode}');
+        throw ServerException(
+          '搜索书籍失败',
+          statusCode: response.statusCode,
         );
-        throw ApiException('搜索书籍失败', statusCode: response.statusCode);
       }
 
       if (!_isLikelyJson(response)) {
-        throw const ApiException('搜索解析未集成，请配置 JSON 接口或接入解析引擎');
+        throw const ValidationException('搜索解析未集成，请配置 JSON 接口或接入解析引擎');
       }
 
       final books = _extractSearchBooks(response);
-      _logService.info('搜索完成，找到${books.length}本书', tag: 'ApiService');
+      _logService.i('搜索完成，找到${books.length}本书');
       return books;
-    } catch (e, stackTrace) {
-      _logService.error(
-        '搜索书籍失败：$keyword',
-        error: e,
-        stackTrace: stackTrace,
-        tag: 'ApiService',
-      );
-      if (e is ApiException) rethrow;
-      throw ApiException('搜索书籍失败', originalError: e);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      _logService.e('搜索书籍失败：$keyword', error: e);
+      throw NetworkException('搜索书籍失败', originalError: e);
     }
   }
 
@@ -143,52 +113,47 @@ class ApiService {
   /// Returns: 书籍详情
   ///
   /// Throws:
-  /// - [ApiException] 当请求失败或数据格式错误时
-  /// Can be reused by clients that only need detail data.
+  /// - [ServerException] 当请求失败时
+  /// - [ValidationException] 当数据格式错误时
   Future<Book> getBookDetail(BookSource source, String bookUrl) async {
     _ensureSource(source);
 
     if (bookUrl.trim().isEmpty) {
-      _logService.error('书籍详情地址为空', tag: 'ApiService');
-      throw const ApiException('书籍详情地址不能为空');
+      _logService.e('书籍详情地址为空');
+      throw const ValidationException('书籍详情地址不能为空');
     }
 
     final requestUrl = _buildFullUrl(source.bookSourceUrl, bookUrl.trim());
-    _logService.info('获取书籍详情：$requestUrl', tag: 'ApiService');
+    _logService.i('获取书籍详情：$requestUrl');
 
     try {
       final response = await _getWithTimeout(Uri.parse(requestUrl));
 
       if (response.statusCode != 200) {
-        _logService.error(
-          '获取书籍详情失败，状态码：${response.statusCode}',
-          tag: 'ApiService',
+        _logService.e('获取书籍详情失败，状态码：${response.statusCode}');
+        throw ServerException(
+          '获取书籍详情失败',
+          statusCode: response.statusCode,
         );
-        throw ApiException('获取书籍详情失败', statusCode: response.statusCode);
       }
 
       if (!_isLikelyJson(response)) {
-        throw const ApiException('书籍详情解析未集成，请配置 JSON 接口或接入解析引擎');
+        throw const ValidationException('书籍详情解析未集成，请配置 JSON 接口或接入解析引擎');
       }
 
       final body = _decodeResponse(response);
       final data = body['data'] ?? body;
       if (data is Map<String, dynamic>) {
         final book = Book.fromJson(data);
-        _logService.info('获取书籍详情成功：${book.name}', tag: 'ApiService');
+        _logService.i('获取书籍详情成功：${book.name}');
         return book;
       }
 
-      throw const ApiException('书籍详情数据格式错误');
-    } catch (e, stackTrace) {
-      _logService.error(
-        '获取书籍详情失败：$bookUrl',
-        error: e,
-        stackTrace: stackTrace,
-        tag: 'ApiService',
-      );
-      if (e is ApiException) rethrow;
-      throw ApiException('获取书籍详情失败', originalError: e);
+      throw const ValidationException('书籍详情数据格式错误');
+    } catch (e) {
+      if (e is AppException) rethrow;
+      _logService.e('获取书籍详情失败：$bookUrl', error: e);
+      throw NetworkException('获取书籍详情失败', originalError: e);
     }
   }
 
@@ -251,9 +216,9 @@ class ApiService {
 
       if (itemList == null) {
         final responseSummary = _getResponseSummary(body);
-        _logService.error('章节列表解析失败，响应结构: $responseSummary', tag: 'ApiService');
-        _logService.debug('完整响应数据(仅Debug模式): $body', tag: 'ApiService');
-        throw const ApiException('章节列表数据格式错误');
+        _logService.e('章节列表解析失败，响应结构: $responseSummary');
+        _logService.d('完整响应数据(仅Debug模式): $body');
+        throw const ValidationException('章节列表数据格式错误');
       }
 
       final chapters = <Chapter>[];
@@ -284,29 +249,21 @@ class ApiService {
       }
 
       if (chapters.isEmpty) {
-        _logService.error('所有章节解析均失败', tag: 'ApiService');
-        throw const ApiException('章节列表解析失败');
+        _logService.e('所有章节解析均失败');
+        throw const ValidationException('章节列表解析失败');
       }
 
       if (failedCount > 0) {
-        _logService.warning(
-          '章节列表解析完成，成功${chapters.length}章，失败$failedCount章',
-          tag: 'ApiService',
-        );
+        _logService.w('章节列表解析完成，成功${chapters.length}章，失败$failedCount章');
       } else {
-        _logService.info('获取章节列表成功，共${chapters.length}章', tag: 'ApiService');
+        _logService.i('获取章节列表成功，共${chapters.length}章');
       }
 
       return chapters;
-    } catch (e, stackTrace) {
-      _logService.error(
-        '获取章节列表失败：$tocUrl',
-        error: e,
-        stackTrace: stackTrace,
-        tag: 'ApiService',
-      );
-      if (e is ApiException) rethrow;
-      throw ApiException('获取章节列表失败', originalError: e);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      _logService.e('获取章节列表失败：$tocUrl', error: e);
+      throw NetworkException('获取章节列表失败', originalError: e);
     }
   }
 
@@ -318,8 +275,8 @@ class ApiService {
   /// Returns: 章节内容
   ///
   /// Throws:
-  /// - [ApiException] 当请求失败或数据格式错误时
-  /// Separates content retrieval from parsing logic for reuse.
+  /// - [ServerException] 当请求失败时
+  /// - [ValidationException] 当数据格式错误时
   Future<ChapterContent> getContent(
     BookSource source,
     String contentUrl,
@@ -327,44 +284,39 @@ class ApiService {
     _ensureSource(source);
 
     if (contentUrl.trim().isEmpty) {
-      _logService.error('正文地址为空', tag: 'ApiService');
-      throw const ApiException('正文地址不能为空');
+      _logService.e('正文地址为空');
+      throw const ValidationException('正文地址不能为空');
     }
 
     final requestUrl = _buildFullUrl(source.bookSourceUrl, contentUrl.trim());
-    _logService.info('获取章节内容：$requestUrl', tag: 'ApiService');
+    _logService.i('获取章节内容：$requestUrl');
 
     try {
       final response = await _getWithTimeout(Uri.parse(requestUrl));
 
       if (response.statusCode != 200) {
-        _logService.error(
-          '获取章节内容失败，状态码：${response.statusCode}',
-          tag: 'ApiService',
+        _logService.e('获取章节内容失败，状态码：${response.statusCode}');
+        throw ServerException(
+          '获取章节内容失败',
+          statusCode: response.statusCode,
         );
-        throw ApiException('获取章节内容失败', statusCode: response.statusCode);
       }
 
       if (!_isLikelyJson(response)) {
-        throw const ApiException('正文解析未集成，请配置 JSON 接口或接入解析引擎');
+        throw const ValidationException('正文解析未集成，请配置 JSON 接口或接入解析引擎');
       }
 
       final body = _decodeResponse(response);
       final content = ChapterContent.fromJson(body);
-      _logService.info('获取章节内容成功', tag: 'ApiService');
+      _logService.i('获取章节内容成功');
       return content;
     } on FormatException catch (e) {
-      _logService.error('章节内容解析失败：${e.message}', error: e, tag: 'ApiService');
-      throw ApiException('章节内容解析失败: ${e.message}', originalError: e);
-    } catch (e, stackTrace) {
-      _logService.error(
-        '获取章节内容失败：$contentUrl',
-        error: e,
-        stackTrace: stackTrace,
-        tag: 'ApiService',
-      );
-      if (e is ApiException) rethrow;
-      throw ApiException('获取章节内容失败', originalError: e);
+      _logService.e('章节内容解析失败：${e.message}', error: e);
+      throw ValidationException('章节内容解析失败: ${e.message}', originalError: e);
+    } catch (e) {
+      if (e is AppException) rethrow;
+      _logService.e('获取章节内容失败：$contentUrl', error: e);
+      throw NetworkException('获取章节内容失败', originalError: e);
     }
   }
 
@@ -372,7 +324,7 @@ class ApiService {
 
   void _ensureSource(BookSource source) {
     if (source.bookSourceUrl.trim().isEmpty) {
-      throw const ApiException('Source is required');
+      throw const ValidationException('Book source URL is required');
     }
   }
 
@@ -479,8 +431,8 @@ class ApiService {
       } catch (e) {
         attempts++;
         if (attempts > retries) {
-          _logService.error('网络请求失败（重试超时）：$uri', error: e, tag: 'ApiService');
-          throw ApiException('网络请求失败: $uri', originalError: e);
+          _logService.e('网络请求失败（重试超时）：$uri', error: e);
+          throw NetworkException('网络请求失败: $uri', originalError: e);
         }
         // 指数退避：每次重试等待时间递增
         await Future.delayed(Duration(milliseconds: 500 * attempts));
@@ -494,8 +446,8 @@ class ApiService {
       return json.decode(utf8.decode(response.bodyBytes))
           as Map<String, dynamic>;
     } catch (e) {
-      _logService.error('响应解析失败', error: e, tag: 'ApiService');
-      throw ApiException('响应解析失败', originalError: e);
+      _logService.e('响应解析失败', error: e);
+      throw ParsingException('响应解析失败', originalError: e);
     }
   }
 
@@ -564,7 +516,7 @@ class ApiService {
 
       return [];
     } catch (e) {
-      _logService.warning('搜索结果解析失败 - $e', tag: 'ApiService');
+      _logService.w('搜索结果解析失败 - $e');
       return [];
     }
   }
