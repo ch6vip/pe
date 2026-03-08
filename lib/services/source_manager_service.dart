@@ -50,7 +50,7 @@ class SourceManagerService extends ChangeNotifier {
       final sources = await Preferences.getSources();
       _sources = sources;
 
-      // 确保至少有一个书源
+      // Ensure at least one source
       if (_sources.isEmpty) {
         _sources = [BookSource.createDemoSource()];
         await _saveSources();
@@ -58,8 +58,8 @@ class SourceManagerService extends ChangeNotifier {
 
       _clearError();
     } catch (e) {
-      _log.e('加载书源数据失败', error: e);
-      _setError('加载书源数据失败: $e');
+      _log.e('Failed to load sources: $e');
+      _setError('Failed to load sources: $e');
       // Fall back to a demo source to keep the app usable.
       _sources = [BookSource.createDemoSource()];
     } finally {
@@ -74,8 +74,8 @@ class SourceManagerService extends ChangeNotifier {
       await Preferences.setSourcesLastUpdateTime(DateTime.now().millisecondsSinceEpoch);
       _clearError();
     } catch (e) {
-      _log.e('保存书源数据失败', error: e);
-      _setError('保存书源数据失败: $e');
+      _log.e('Failed to save sources: $e');
+      _setError('Failed to save sources: $e');
       rethrow;
     }
   }
@@ -85,19 +85,19 @@ class SourceManagerService extends ChangeNotifier {
     try {
       _setLoading(true);
 
-      // Check for an existing source with the same URL.
+      // Check for existing source with same URL.
       if (_sources.any((s) => s.bookSourceUrl == source.bookSourceUrl)) {
-        _setError('已存在相同 URL 的书源');
+        _setError('Source with same URL already exists');
         return false;
       }
 
-      // Check for an existing source with the same name.
+      // Check for existing source with same name.
       if (_sources.any((s) => s.bookSourceName == source.bookSourceName)) {
-        _setError('已存在相同名称的书源');
+        _setError('Source with same name already exists');
         return false;
       }
 
-      // Create a new source with a timestamp.
+      // Create new source with timestamp.
       final newSource = source.copyWith(
         lastUpdateTime: DateTime.now().millisecondsSinceEpoch,
       );
@@ -107,7 +107,7 @@ class SourceManagerService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _setError('添加书源失败: $e');
+      _setError('Failed to add source: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -119,12 +119,12 @@ class SourceManagerService extends ChangeNotifier {
     try {
       // Validate input.
       if (name.trim().isEmpty) {
-        _setError('书源名称不能为空');
+        _setError('Source name cannot be empty');
         return false;
       }
 
       if (bookSourceUrl.trim().isEmpty) {
-        _setError('书源地址不能为空');
+        _setError('Source URL cannot be empty');
         return false;
       }
 
@@ -143,7 +143,7 @@ class SourceManagerService extends ChangeNotifier {
 
       return await addSource(newSource);
     } catch (e) {
-      _setError('创建书源失败: $e');
+      _setError('Failed to create source: $e');
       return false;
     }
   }
@@ -157,7 +157,7 @@ class SourceManagerService extends ChangeNotifier {
         (source) => source.bookSourceUrl == updatedSource.bookSourceUrl,
       );
       if (index == -1) {
-        _setError('未找到要更新的书源');
+        _setError('Source not found for update');
         return false;
       }
 
@@ -171,7 +171,7 @@ class SourceManagerService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _setError('更新书源失败: $e');
+      _setError('Failed to update source: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -184,7 +184,7 @@ class SourceManagerService extends ChangeNotifier {
       final index =
           _sources.indexWhere((source) => source.bookSourceUrl == sourceUrl);
       if (index == -1) {
-        _setError('未找到要切换的书源');
+        _setError('Source not found for toggle');
         return false;
       }
 
@@ -198,7 +198,7 @@ class SourceManagerService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _setError('切换书源状态失败: $e');
+      _setError('Failed to toggle source state: $e');
       return false;
     }
   }
@@ -212,7 +212,7 @@ class SourceManagerService extends ChangeNotifier {
       _sources.removeWhere((source) => source.bookSourceUrl == sourceUrl);
 
       if (_sources.length == originalLength) {
-        _setError('未找到要删除的书源');
+        _setError('Source not found for deletion');
         return false;
       }
 
@@ -220,7 +220,7 @@ class SourceManagerService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _setError('删除书源失败: $e');
+      _setError('Failed to delete source: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -245,7 +245,7 @@ class SourceManagerService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _setError('清空书源失败: $e');
+      _setError('Failed to clear sources: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -261,7 +261,7 @@ class SourceManagerService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _setError('重置书源失败: $e');
+      _setError('Failed to reset sources: $e');
       return false;
     } finally {
       _setLoading(false);
@@ -306,10 +306,10 @@ class SourceManagerService extends ChangeNotifier {
 
       // Validate URL.
       if (url.trim().isEmpty) {
-        throw Exception('URL 不能为空');
+        throw Exception('URL cannot be empty');
       }
 
-      // Perform the network request.
+      // Perform network request.
       final response = await http.get(
         Uri.parse(url.trim()),
         headers: {
@@ -319,7 +319,7 @@ class SourceManagerService extends ChangeNotifier {
       ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200) {
-        throw Exception('网络请求失败，状态码: ${response.statusCode}');
+        throw Exception('Network request failed, status code: ${response.statusCode}');
       }
 
       // Parse response data.
@@ -336,7 +336,7 @@ class SourceManagerService extends ChangeNotifier {
               sourcesToImport.add(source);
             } catch (e) {
               // Debug info: failed to parse a single source.
-              _log.w('解析单个书源失败: $e, 数据: $item');
+              _log.w('Failed to parse individual source: $e, data: $item');
             }
           }
         }
@@ -346,14 +346,14 @@ class SourceManagerService extends ChangeNotifier {
           final source = BookSource.fromJson(responseData);
           sourcesToImport.add(source);
         } catch (e) {
-          throw Exception('解析书源数据失败: $e');
+          throw Exception('Failed to parse source data: $e');
         }
       } else {
-        throw Exception('不支持的数据格式，期望 JSON 对象或数组');
+        throw Exception('Unsupported data format, expected JSON object or array');
       }
 
       if (sourcesToImport.isEmpty) {
-        throw Exception('未找到有效的书源数据');
+        throw Exception('No valid source data found');
       }
 
       // Bulk import with deduplication.
@@ -362,12 +362,12 @@ class SourceManagerService extends ChangeNotifier {
         bool shouldAdd = true;
         bool shouldUpdate = false;
 
-        // Update if the same bookSourceUrl exists.
+        // Update if same bookSourceUrl exists.
         if (_sources.any((s) => s.bookSourceUrl == source.bookSourceUrl)) {
           shouldAdd = false;
           shouldUpdate = true;
         }
-        // Skip if the same name exists with a different URL.
+        // Skip if same name exists with different URL.
         else if (_sources
             .any((s) => s.bookSourceName == source.bookSourceName)) {
           shouldAdd = false;
@@ -400,7 +400,7 @@ class SourceManagerService extends ChangeNotifier {
 
       return importedCount;
     } catch (e) {
-      _setError('导入失败: $e');
+      _setError('Import failed: $e');
       rethrow;
     } finally {
       _setLoading(false);

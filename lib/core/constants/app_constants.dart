@@ -1,16 +1,16 @@
-# 核心常量配置
+// Core constants configuration
 
 class AppConstants {
-  // 应用信息
+  // App info
   static const String appName = 'PE Reader';
   static const String version = '1.0.0';
   static const String userAgent = 'PE-Reader/1.0 (Flutter)';
 
-  // API 配置
+  // API config
   static const Duration timeout = Duration(seconds: 15);
   static const int maxConnectionsPerHost = 6;
 
-  // 缓存配置
+  // Cache config
   static const int maxCacheSizeBytes = 100 * 1024 * 1024; // 100 MB
   static const Duration cacheExpiry = Duration(days: 7);
   static const String cacheKeyBookshelf = 'bookshelf';
@@ -18,23 +18,23 @@ class AppConstants {
   static const String cacheKeySources = 'sources';
   static const String cacheKeyReadingProgress = 'reading_progress';
 
-  // 规则引擎
+  // Rule engine
   static const bool enableRuleCache = true;
   static const int maxRuleCacheSize = 50;
   static const Duration ruleCacheExpiry = Duration(hours: 24);
   static const String ruleCacheKeyPrefix = 'rule_';
 
-  // 书架
+  // Bookshelf
   static const int maxBookshelfSize = 1000;
   static const String defaultBookshelfSort = 'addedAt';
   static const List<String> bookshelfSortOptions = [
-    'addedAt',    // 添加时间
-    'title',      // 书名
-    'author',     // 作者
-    'lastRead',   // 最近阅读
+    'addedAt',    // add time
+    'title',      // book name
+    'author',     // author
+    'lastRead',   // last read
   ];
 
-  // 阅读器
+  // Reader
   static const double defaultFontSize = 16.0;
   static const double minFontSize = 8.0;
   static const double maxFontSize = 36.0;
@@ -46,11 +46,11 @@ class AppConstants {
   static const int minMargin = 0;
   static const int maxMargin = 32;
 
-  // 预加载
+  // Prefetch
   static const int prefetchChaptersCount = 3;
   static const int prefetchPagesCount = 5;
 
-  // Legado 协议
+  // Legado protocol
   static const String legadoSourceVersion = '1.0';
   static const String legadoApiPath = '/legado';
   static const Map<String, String> legadoRequiredFields = {
@@ -67,8 +67,8 @@ class AppConstants {
   static const double borderRadius = 8.0;
   static const double splashRadius = 24.0;
 
-  // 网络
-  static const List<String> defaultHeaders = {
+  // Network headers
+  static const Map<String, String> defaultHeaders = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
     'Accept-Encoding': 'gzip, deflate',
@@ -76,7 +76,7 @@ class AppConstants {
     'Upgrade-Insecure-Requests': '1',
   };
 
-  // 调试
+  // Debug
   static const bool enableDebugLog = bool.fromEnvironment('dart.vm.product') == false;
   static const int maxLogLength = 1000;
 }

@@ -13,61 +13,47 @@ import 'package:reader_flutter/models/chapter_content.dart';
 class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
-  /// HTTP 请求超时时间
+  /// HTTP request timeout
   static const Duration _requestTimeout = Duration(seconds: 15);
 
-  /// HTTP 客户端（可注入用于测试）
+  /// HTTP client (injectable for testing)
   final http.Client _client;
 
-  /// 日志服务
-  final AppLogger _logService = AppLogger();
+  /// Logger
+  final AppLogger _log = AppLogger();
 
-
-  // ==================== 公共方法 ====================
-
-  /// 获取原始响应（供调试与解析器使用）
-  /// Returns raw HTTP response for debugging and rule verification.
+  /// Fetch raw response (for debugging and rule verification)
   Future<http.Response> fetchRaw(String url) async {
     final trimmed = url.trim();
     if (trimmed.isEmpty) {
-      throw const ValidationException('URL 不能为空');
+      throw ValidationException('URL cannot be empty');
     }
     try {
       return await _getWithTimeout(Uri.parse(trimmed));
-    } catch (e, stackTrace) {
-      _logService.e('获取原始响应失败：$trimmed', error: e);
+    } catch (e) {
+      _log.e('Failed to fetch raw response: $trimmed - $e');
       if (e is AppException) rethrow;
-      throw NetworkException('获取原始响应失败', originalError: e);
+      throw NetworkException('Failed to fetch raw response', error: e);
     }
   }
 
-  /// 搜索书籍
+  /// Search books
   ///
-  /// [source] - 书源
-  /// [keyword] - 搜索关键词
-  /// [page] - 页码（从 1 开始）
+  /// [source] - book source
+  /// [keyword] - search keyword
+  /// [page] - page number (starting from 1)
   ///
-  /// Returns: 匹配的书籍列表
-  ///
-  /// Throws:
-  /// - [ApiException] 当搜索请求失败时
-  /// Designed for reuse by other rule-driven aggregation services.
-  Future<List<Book>> searchBooks(
-    BookSource source,
-    String keyword, {
-    int page = 1,
-  }) async {
-    _ensureSource(source);
-
-    if (keyword.trim().isEmpty) {
-      _logService.debug('搜索关键词为空，返回空结果', tag: 'ApiService');
-      return [];
+  /// Returns: list of books
+  Future<List<Book>> searchBooks(BookSource source, String keyword, {int page = 1}) async {
+    if (source.bookSourceUrl.trim().isEmpty) {
+      _log.e('Source URL not configured');
+      throw ValidationException('Source URL is required');
     }
 
     final searchUrl = source.searchUrl?.trim() ?? '';
     if (searchUrl.isEmpty) {
-      _logService.e('书源未配置搜索地址');
-      throw const ValidationException('搜索地址缺失');
+      _log.e('Search URL not configured');
+      throw ValidationException('Search URL is missing');
     }
 
     final normalizedPage = page < 1 ? 1 : page;
@@ -78,147 +64,133 @@ class ApiService {
       normalizedPage,
     );
 
-    _logService.i('搜索书籍：$keyword (第$normalizedPage页)');
+    _log.i('Searching books: $keyword (page $normalizedPage)');
 
     try {
       final response = await _getWithTimeout(Uri.parse(requestUrl));
 
       if (response.statusCode != 200) {
-        _logService.e('搜索书籍失败，状态码：${response.statusCode}');
+        _log.e('Search books failed, status code: ${response.statusCode}');
         throw ServerException(
-          '搜索书籍失败',
+          'Search books failed',
           statusCode: response.statusCode,
         );
       }
 
       if (!_isLikelyJson(response)) {
-        throw const ValidationException('搜索解析未集成，请配置 JSON 接口或接入解析引擎');
+        throw ValidationException('Search parsing not integrated, please configure JSON interface or integrate parsing engine');
       }
 
       final books = _extractSearchBooks(response);
-      _logService.i('搜索完成，找到${books.length}本书');
+      _log.i('Search completed, found ${books.length} books');
       return books;
     } catch (e) {
       if (e is AppException) rethrow;
-      _logService.e('搜索书籍失败：$keyword', error: e);
-      throw NetworkException('搜索书籍失败', originalError: e);
+      _log.e('Search books failed: $keyword - $e');
+      throw NetworkException('Search books failed', error: e);
     }
   }
 
-  /// 获取书籍详情
-  ///
-  /// [source] - 书源
-  /// [bookUrl] - 详情页 URL（可为相对路径）
-  ///
-  /// Returns: 书籍详情
-  ///
-  /// Throws:
-  /// - [ServerException] 当请求失败时
-  /// - [ValidationException] 当数据格式错误时
+  /// Get book detail
   Future<Book> getBookDetail(BookSource source, String bookUrl) async {
-    _ensureSource(source);
+    if (source.bookSourceUrl.trim().isEmpty) {
+      throw ValidationException('Book source URL is required');
+    }
 
     if (bookUrl.trim().isEmpty) {
-      _logService.e('书籍详情地址为空');
-      throw const ValidationException('书籍详情地址不能为空');
+      _log.e('Book detail URL is empty');
+      throw ValidationException('Book detail URL cannot be empty');
     }
 
     final requestUrl = _buildFullUrl(source.bookSourceUrl, bookUrl.trim());
-    _logService.i('获取书籍详情：$requestUrl');
+    _log.i('Getting book detail: $requestUrl');
 
     try {
       final response = await _getWithTimeout(Uri.parse(requestUrl));
 
       if (response.statusCode != 200) {
-        _logService.e('获取书籍详情失败，状态码：${response.statusCode}');
+        _log.e('Get book detail failed, status code: ${response.statusCode}');
         throw ServerException(
-          '获取书籍详情失败',
+          'Get book detail failed',
           statusCode: response.statusCode,
         );
       }
 
       if (!_isLikelyJson(response)) {
-        throw const ValidationException('书籍详情解析未集成，请配置 JSON 接口或接入解析引擎');
+        throw ValidationException('Book detail parsing not integrated, please configure JSON interface or integrate parsing engine');
       }
 
       final body = _decodeResponse(response);
       final data = body['data'] ?? body;
       if (data is Map<String, dynamic>) {
         final book = Book.fromJson(data);
-        _logService.i('获取书籍详情成功：${book.name}');
+        _log.i('Got book detail successfully: ${book.name}');
         return book;
       }
 
-      throw const ValidationException('书籍详情数据格式错误');
+      throw ValidationException('Book detail data format error');
     } catch (e) {
       if (e is AppException) rethrow;
-      _logService.e('获取书籍详情失败：$bookUrl', error: e);
-      throw NetworkException('获取书籍详情失败', originalError: e);
+      _log.e('Get book detail failed: $bookUrl - $e');
+      throw NetworkException('Get book detail failed', error: e);
     }
   }
 
-  /// 获取书籍的章节列表
-  ///
-  /// [source] - 书源
-  /// [tocUrl] - 目录页 URL（可为相对路径）
-  ///
-  /// Returns: 章节列表
-  ///
-  /// Throws:
-  /// - [ApiException] 当请求失败或数据格式错误时
-  /// Compatible with multiple JSON response shapes.
+  /// Get chapter list (TOC)
   Future<List<Chapter>> getChapters(BookSource source, String tocUrl) async {
-    _ensureSource(source);
+    if (source.bookSourceUrl.trim().isEmpty) {
+      throw ValidationException('Book source URL is required');
+    }
 
     if (tocUrl.trim().isEmpty) {
-      _logService.error('目录地址为空', tag: 'ApiService');
-      throw const ApiException('目录地址不能为空');
+      _log.e('TOC URL is empty');
+      throw ValidationException('TOC URL cannot be empty');
     }
 
     final requestUrl = _buildFullUrl(source.bookSourceUrl, tocUrl.trim());
-    _logService.info('获取章节列表：$requestUrl', tag: 'ApiService');
+    _log.i('Getting chapter list: $requestUrl');
 
     try {
       final response = await _getWithTimeout(Uri.parse(requestUrl));
 
       if (response.statusCode != 200) {
-        _logService.error(
-          '获取章节列表失败，状态码：${response.statusCode}',
-          tag: 'ApiService',
+        _log.e('Get chapter list failed, status code: ${response.statusCode}');
+        throw ServerException(
+          'Get chapter list failed',
+          statusCode: response.statusCode,
         );
-        throw ApiException('获取章节列表失败', statusCode: response.statusCode);
       }
 
       if (!_isLikelyJson(response)) {
-        throw const ApiException('目录解析未集成，请配置 JSON 接口或接入解析引擎');
+        throw ValidationException('Chapter list parsing not integrated, please configure JSON interface or integrate parsing engine');
       }
 
       final body = _decodeResponse(response);
-      dynamic data = body['data'];
+      final data = body['data'] ?? body;
 
       List<dynamic>? itemList;
 
       if (data is Map<String, dynamic>) {
         itemList = (data['item_data_list'] ??
-            data['item_list'] ??
-            data['chapter_list'] ??
-            data['chapters'] ??
-            data['list']) as List<dynamic>?;
+                data['item_list'] ??
+                data['chapter_list'] ??
+                data['chapters'] ??
+                data['list']) as List<dynamic>?;
       } else if (data is List) {
         itemList = data;
       }
 
       itemList ??= (body['item_data_list'] ??
-          body['item_list'] ??
-          body['chapter_list'] ??
-          body['chapters'] ??
-          body['list']) as List<dynamic>?;
+              body['item_list'] ??
+              body['chapter_list'] ??
+              body['chapters'] ??
+              body['list']) as List<dynamic>?;
 
       if (itemList == null) {
         final responseSummary = _getResponseSummary(body);
-        _logService.e('章节列表解析失败，响应结构: $responseSummary');
-        _logService.d('完整响应数据(仅Debug模式): $body');
-        throw const ValidationException('章节列表数据格式错误');
+        _log.e('Chapter list parsing failed, response structure: $responseSummary');
+        _log.d('Full response data (debug only): $body');
+        throw ValidationException('Chapter list data format error');
       }
 
       final chapters = <Chapter>[];
@@ -232,141 +204,121 @@ class ApiService {
             chapters.add(chapter);
           } else {
             failedCount++;
-            _logService.warning(
-              '章节${i + 1}数据格式错误，跳过: ${item.runtimeType}',
-              tag: 'ApiService',
-            );
+            _log.w('Chapter ${i+1} data format error, skipping: ${item.runtimeType}');
           }
-        } catch (e, stackTrace) {
+        } catch (e) {
           failedCount++;
-          _logService.error(
-            '章节${i + 1}解析失败，跳过',
-            error: e,
-            stackTrace: stackTrace,
-            tag: 'ApiService',
-          );
+          _log.e('Chapter ${i+1} parsing failed, skipping - $e');
         }
       }
 
       if (chapters.isEmpty) {
-        _logService.e('所有章节解析均失败');
-        throw const ValidationException('章节列表解析失败');
+        throw ValidationException('Chapter list parsing failed');
       }
 
       if (failedCount > 0) {
-        _logService.w('章节列表解析完成，成功${chapters.length}章，失败$failedCount章');
+        _log.w('Chapter list parsing completed: ${chapters.length} success, $failedCount failed');
       } else {
-        _logService.i('获取章节列表成功，共${chapters.length}章');
+        _log.i('Got chapter list successfully: ${chapters.length} chapters');
       }
 
       return chapters;
     } catch (e) {
       if (e is AppException) rethrow;
-      _logService.e('获取章节列表失败：$tocUrl', error: e);
-      throw NetworkException('获取章节列表失败', originalError: e);
+      _log.e('Get chapter list failed: $tocUrl - $e');
+      throw NetworkException('Get chapter list failed', error: e);
     }
   }
 
-  /// 获取章节内容
-  ///
-  /// [source] - 书源
-  /// [contentUrl] - 正文页 URL（可为相对路径）
-  ///
-  /// Returns: 章节内容
-  ///
-  /// Throws:
-  /// - [ServerException] 当请求失败时
-  /// - [ValidationException] 当数据格式错误时
-  Future<ChapterContent> getContent(
-    BookSource source,
-    String contentUrl,
-  ) async {
-    _ensureSource(source);
+  /// Get chapter content
+  Future<ChapterContent> getContent(BookSource source, String contentUrl) async {
+    if (source.bookSourceUrl.trim().isEmpty) {
+      throw ValidationException('Book source URL is required');
+    }
 
     if (contentUrl.trim().isEmpty) {
-      _logService.e('正文地址为空');
-      throw const ValidationException('正文地址不能为空');
+      _log.e('Content URL is empty');
+      throw ValidationException('Content URL cannot be empty');
     }
 
     final requestUrl = _buildFullUrl(source.bookSourceUrl, contentUrl.trim());
-    _logService.i('获取章节内容：$requestUrl');
+    _log.i('Getting chapter content: $requestUrl');
 
     try {
       final response = await _getWithTimeout(Uri.parse(requestUrl));
 
       if (response.statusCode != 200) {
-        _logService.e('获取章节内容失败，状态码：${response.statusCode}');
+        _log.e('Get chapter content failed, status code: ${response.statusCode}');
         throw ServerException(
-          '获取章节内容失败',
+          'Get chapter content failed',
           statusCode: response.statusCode,
         );
       }
 
       if (!_isLikelyJson(response)) {
-        throw const ValidationException('正文解析未集成，请配置 JSON 接口或接入解析引擎');
+        throw ValidationException('Chapter content parsing not integrated, please configure JSON interface or integrate parsing engine');
       }
 
       final body = _decodeResponse(response);
       final content = ChapterContent.fromJson(body);
-      _logService.i('获取章节内容成功');
+      _log.i('Got chapter content successfully');
       return content;
     } on FormatException catch (e) {
-      _logService.e('章节内容解析失败：${e.message}', error: e);
-      throw ValidationException('章节内容解析失败: ${e.message}', originalError: e);
+      _log.e('Chapter content parsing failed: ${e.message}');
+      throw ValidationException('Chapter content parsing failed: ${e.message}', error: e);
     } catch (e) {
       if (e is AppException) rethrow;
-      _logService.e('获取章节内容失败：$contentUrl', error: e);
-      throw NetworkException('获取章节内容失败', originalError: e);
+      _log.e('Get chapter content failed: $contentUrl - $e');
+      throw NetworkException('Get chapter content failed', error: e);
     }
   }
 
-  // ==================== 私有辅助方法 ====================
+  // ==================== Private helper methods ====================
 
   void _ensureSource(BookSource source) {
     if (source.bookSourceUrl.trim().isEmpty) {
-      throw const ValidationException('Book source URL is required');
+      throw ValidationException('Book source URL is required');
     }
   }
 
-  String _buildSearchUrl(
-    String baseUrl,
-    String searchUrl,
-    String keyword,
-    int page,
-  ) {
-    final encodedKeyword = Uri.encodeComponent(keyword);
-    final normalizedPage = page < 1 ? 1 : page;
-    final url = searchUrl
-        .replaceAll('{key}', encodedKeyword)
-        .replaceAll('{keyword}', encodedKeyword)
-        .replaceAll('{page}', normalizedPage.toString());
-    return _buildFullUrl(baseUrl, url);
+  Future<http.Response> _getWithTimeout(Uri uri, {int? timeout}) async {
+    int attempts = 0;
+    final retries = 3;
+    final actualTimeout = timeout ?? _requestTimeout.inMilliseconds;
+
+    while (attempts < retries) {
+      attempts++;
+      try {
+        return await _client.get(uri).timeout(actualTimeout);
+      } catch (e) {
+        if (attempts >= retries) {
+          _log.e('Network request failed (retries exhausted): $uri - $e');
+          throw NetworkException('Network request failed: $uri', error: e);
+        }
+        // Exponential backoff
+        await Future.delayed(Duration(milliseconds: 500 * attempts));
+      }
+    }
+    // Should not reach here
+    throw NetworkException('Network request failed: $uri');
   }
 
-  String _buildFullUrl(String baseUrl, String url) {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
+  Map<String, dynamic> _decodeResponse(http.Response response) {
+    try {
+      return json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    } catch (e) {
+      _log.e('Response parsing failed: $e');
+      throw ParsingException('Response parsing failed', error: e);
     }
-
-    final baseUri = Uri.parse(baseUrl);
-    return baseUri.resolve(url).toString();
   }
 
   bool _isLikelyJson(http.Response response) {
-    final contentType = response.headers['content-type'];
-    if (contentType != null && contentType.contains('application/json')) {
-      return true;
-    }
-    final trimmed = utf8.decode(response.bodyBytes).trimLeft();
-    return trimmed.startsWith('{') || trimmed.startsWith('[');
+    final contentType = response.headers['content-type'] ?? '';
+    return contentType.contains('application/json') || response.body.trim().startsWith('{') || response.body.trim().startsWith('[');
   }
 
-  /// 获取响应数据的摘要信息
-  ///
-  /// 避免在生产日志中打印完整的JSON响应体
   String _getResponseSummary(Map<String, dynamic> body) {
     final summary = <String, dynamic>{};
-
     if (body.containsKey('code')) summary['code'] = body['code'];
     if (body.containsKey('message')) summary['message'] = body['message'];
     if (body.containsKey('data')) {
@@ -387,142 +339,60 @@ class ApiService {
         summary['data_type'] = data.runtimeType.toString();
       }
     }
-
     return summary.toString();
   }
 
-  /// 带超时的 GET 请求，包含简单的重试机制和重定向跟随
-  ///
-  /// [uri] - 请求的 URI
-  /// [retries] - 重试次数，默认为 2
-  ///
-  /// 特性：
-  /// - 15 秒请求超时
-  /// - 失败自动重试（指数退避）
-  /// - 自动跟随 301/302 重定向
-  Future<http.Response> _getWithTimeout(Uri uri, {int retries = 2}) async {
-    int attempts = 0;
-    while (true) {
-      try {
-        final response = await _client.get(uri).timeout(_requestTimeout);
-
-        // 处理 HTTP 重定向
-        if (response.statusCode == 301 || response.statusCode == 302) {
-          final location = response.headers['location'];
-          if (location != null) {
-            final redirectUri = Uri.parse(location);
-            // 处理相对路径重定向
-            if (!redirectUri.hasScheme) {
-              return await _getWithTimeout(
-                uri.replace(
-                  path: redirectUri.path,
-                  queryParameters: redirectUri.queryParameters.isEmpty
-                      ? uri.queryParameters
-                      : redirectUri.queryParameters,
-                ),
-                retries: retries,
-              );
-            }
-            return await _getWithTimeout(redirectUri, retries: retries);
-          }
-        }
-
-        return response;
-      } catch (e) {
-        attempts++;
-        if (attempts > retries) {
-          _logService.e('网络请求失败（重试超时）：$uri', error: e);
-          throw NetworkException('网络请求失败: $uri', originalError: e);
-        }
-        // 指数退避：每次重试等待时间递增
-        await Future.delayed(Duration(milliseconds: 500 * attempts));
-      }
-    }
-  }
-
-  /// 解码 HTTP 响应体
-  Map<String, dynamic> _decodeResponse(http.Response response) {
-    try {
-      return json.decode(utf8.decode(response.bodyBytes))
-          as Map<String, dynamic>;
-    } catch (e) {
-      _logService.e('响应解析失败', error: e);
-      throw ParsingException('响应解析失败', originalError: e);
-    }
-  }
-
-  /// 从搜索API响应中提取书籍列表
-  ///
-  /// 搜索API返回格式：
-  /// ```json
-  /// {
-  ///   "code": 0,
-  ///   "message": "SUCCESS",
-  ///   "search_tabs": [
-  ///     {
-  ///       "tab_type": 3,
-  ///       "data": [
-  ///         {
-  ///           "book_data": [
-  ///             {
-  ///               "book_id": "123456",
-  ///               "book_name": "书名",
-  ///               "author": "作者",
-  ///               "thumb_url": "封面URL",
-  ///               "abstract": "简介"
-  ///             }
-  ///           ]
-  ///         }
-  ///       ]
-  ///     }
-  ///   ]
-  /// }
-  /// ```
-  List<Book> _extractSearchBooks(http.Response response) {
-    if (response.statusCode != 200) {
+  List<Book> _extractSearchBooks(Map<String, dynamic> body) {
+    if (body['code'] != 0) {
       return [];
     }
 
-    try {
-      final body = _decodeResponse(response);
-
-      if (body['code'] != 0) {
-        return [];
-      }
-
-      final searchTabs = body['search_tabs'];
-      if (searchTabs == null || searchTabs is! List) {
-        return [];
-      }
-
-      for (final tab in searchTabs) {
-        if (tab is! Map<String, dynamic>) continue;
-
-        final tabData = tab['data'];
-        if (tabData == null || tabData is! List) continue;
-
-        for (final item in tabData) {
-          if (item is! Map<String, dynamic>) continue;
-
-          final bookData = item['book_data'];
-          if (bookData == null || bookData is! List) continue;
-
-          return bookData
-              .whereType<Map<String, dynamic>>()
-              .map((book) => Book.fromSearchData(book))
-              .toList();
-        }
-      }
-
-      return [];
-    } catch (e) {
-      _logService.w('搜索结果解析失败 - $e');
+    final searchTabs = body['search_tabs'];
+    if (searchTabs == null || searchTabs is! List) {
       return [];
     }
+
+    for (final tab in searchTabs) {
+      if (tab is! Map<String, dynamic>) continue;
+
+      final tabData = tab['data'];
+      if (tabData == null || tabData is! List) continue;
+
+      for (final item in tabData) {
+        if (item is! Map<String, dynamic>) continue;
+
+        final bookData = item['book_data'];
+        if (bookData == null || bookData is! List) continue;
+
+        return bookData
+            .whereType<Map<String, dynamic>>()
+            .map((book) => Book.fromSearchData(book))
+            .toList();
+      }
+    }
+
+    return [];
   }
 
-  /// 释放资源
-  /// Call when the service is no longer needed.
+  String _buildSearchUrl(String baseUrl, String searchUrl, String keyword, int page) {
+    final encodedKeyword = Uri.encodeComponent(keyword);
+    final normalizedPage = page < 1 ? 1 : page;
+    final url = searchUrl
+        .replaceAll('{key}', encodedKeyword)
+        .replaceAll('{keyword}', encodedKeyword)
+        .replaceAll('{page}', normalizedPage.toString());
+    return _buildFullUrl(baseUrl, url);
+  }
+
+  String _buildFullUrl(String baseUrl, String url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    final baseUri = Uri.parse(baseUrl);
+    return baseUri.resolve(url).toString();
+  }
+
+  /// Dispose resources
   void dispose() {
     _client.close();
   }

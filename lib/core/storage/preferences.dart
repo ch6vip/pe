@@ -29,10 +29,10 @@ class Preferences {
       final prefs = await _prefs;
       final json = jsonEncode(books.map((b) => b.toJson()).toList());
       await prefs.setString(_bookshelfKey, json);
-      _log.d('书架已保存，共 ${books.length} 本书');
-    } catch (e, stack) {
-      _log.e('保存书架失败', error: e, stackTrace: stack);
-      throw StorageException('保存书架失败', originalError: e);
+      _log.d('Bookshelf saved, total ${books.length} books');
+    } catch (e) {
+      _log.e('Failed to save bookshelf: $e');
+      throw StorageException('Failed to save bookshelf', error: e);
     }
   }
 
@@ -50,11 +50,11 @@ class Preferences {
           .map((item) => Book.fromJson(item))
           .toList();
     } on FormatException catch (e) {
-      _log.e('书架数据解析失败', error: e);
-      throw ParsingException('书架数据格式错误', originalError: e);
+      _log.e('Failed to parse bookshelf data: $e');
+      throw ParsingException('Bookshelf data format error', error: e);
     } catch (e) {
-      _log.e('获取书架失败', error: e);
-      throw StorageException('获取书架失败', originalError: e);
+      _log.e('Failed to get bookshelf: $e');
+      throw StorageException('Failed to get bookshelf', error: e);
     }
   }
 
@@ -63,12 +63,12 @@ class Preferences {
     final books = await getBookshelf();
     // 避免重复（基于 ID）
     if (books.any((b) => b.id == book.id)) {
-      _log.w('书籍已存在于书架：${book.name}');
+      _log.w('Book already exists in bookshelf: ${book.name}');
       return;
     }
     books.insert(0, book); // 添加到开头
     await setBookshelf(books);
-    _log.i('书籍已添加到书架：${book.name}');
+    _log.i('Book added to bookshelf: ${book.name}');
   }
 
   /// 从书架移除书籍
@@ -78,7 +78,7 @@ class Preferences {
     books.removeWhere((b) => b.id == bookId);
     if (books.length < initialLength) {
       await setBookshelf(books);
-      _log.i('书籍已从书架移除：$bookId');
+      _log.i('Book removed from bookshelf: $bookId');
     }
   }
 
@@ -89,7 +89,7 @@ class Preferences {
     if (index >= 0) {
       books[index] = updatedBook;
       await setBookshelf(books);
-      _log.d('书架书籍已更新：${updatedBook.name}');
+      _log.d('Book in bookshelf updated: ${updatedBook.name}');
     }
   }
 
@@ -113,9 +113,9 @@ class Preferences {
         '$_readingProgressKey.$bookId',
         jsonEncode(progress),
       );
-      _log.v('阅读进度已保存：$bookId - $chapterTitle');
+      _log.v('Reading progress saved: $bookId - $chapterTitle');
     } catch (e) {
-      _log.e('保存阅读进度失败', error: e);
+      _log.e('Failed to save reading progress: $e');
     }
   }
 
@@ -127,7 +127,7 @@ class Preferences {
       if (json == null) return null;
       return jsonDecode(json) as Map<String, dynamic>;
     } catch (e) {
-      _log.e('获取阅读进度失败', error: e);
+      _log.e('Failed to get reading progress: $e');
       return null;
     }
   }
@@ -139,9 +139,9 @@ class Preferences {
     try {
       final prefs = await _prefs;
       await prefs.setString(_settingsKey, jsonEncode(settings));
-      _log.d('设置已保存');
+      _log.d('Settings saved');
     } catch (e) {
-      _log.e('保存设置失败', error: e);
+      _log.e('Failed to save settings: $e');
     }
   }
 
@@ -159,7 +159,7 @@ class Preferences {
       }
       return jsonDecode(json) as Map<String, dynamic>;
     } catch (e) {
-      _log.e('获取设置失败', error: e);
+      _log.e('Failed to get settings: $e');
       return const {
         'fontSize': 16.0,
         'lineHeight': 1.6,
@@ -168,7 +168,7 @@ class Preferences {
     }
   }
 
-  // ==================== 书源管理（已由 SourceManagerService 处理，这里仅作示例）====================
+  // ==================== 书源管理 ====================
 
   /// 保存书源列表
   static Future<void> setSources(List<BookSource> sources) async {
@@ -176,10 +176,10 @@ class Preferences {
       final prefs = await _prefs;
       final json = jsonEncode(sources.map((s) => s.toJson()).toList());
       await prefs.setString('book_sources', json);
-      _log.d('书源已保存，共 ${sources.length} 个');
+      _log.d('Sources saved, total ${sources.length}');
     } catch (e) {
-      _log.e('保存书源失败', error: e);
-      throw StorageException('保存书源失败', originalError: e);
+      _log.e('Failed to save sources: $e');
+      throw StorageException('Failed to save sources', error: e);
     }
   }
 
@@ -197,7 +197,7 @@ class Preferences {
           .map((item) => BookSource.fromJson(item))
           .toList();
     } catch (e) {
-      _log.e('获取书源失败', error: e);
+      _log.e('Failed to get sources: $e');
       return [BookSource.createDemoSource()];
     }
   }
@@ -221,9 +221,9 @@ class Preferences {
     try {
       final prefs = await _prefs;
       await prefs.clear();
-      _log.i('所有本地数据已清除');
+      _log.i('All local data cleared');
     } catch (e) {
-      _log.e('清除数据失败', error: e);
+      _log.e('Failed to clear data: $e');
     }
   }
 

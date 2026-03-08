@@ -107,7 +107,7 @@ class ReaderController extends ChangeNotifier {
         );
 
         // 根据错误类型提供更友好的错误信息
-        if (e is ApiException) {
+        if (e is AppException) {
           _errorMessage = _getApiErrorMessage(e);
         } else {
           _errorMessage = '加载章节列表失败，请检查网络连接后重试';
@@ -229,7 +229,7 @@ class ReaderController extends ChangeNotifier {
           );
 
           // 根据错误类型提供更友好的错误信息
-          if (e is ApiException) {
+          if (e is AppException) {
             _errorMessage = _getApiErrorMessage(e);
           } else {
             _errorMessage = '加载章节失败，请检查网络连接';
@@ -372,12 +372,12 @@ class ReaderController extends ChangeNotifier {
   }
 
   /// 获取用户友好的 API 错误信息
-  String _getApiErrorMessage(ApiException e) {
+  String _getApiErrorMessage(AppException e) {
     final message = e.message.toLowerCase();
 
     if (message.contains('网络') ||
         message.contains('network') ||
-        e.statusCode != null) {
+        e is ServerException e.statusCode != nulle.statusCode != null e.statusCode != null) {
       return '网络连接失败，请检查网络后重试';
     } else if (message.contains('解析') || message.contains('parse')) {
       return '数据格式错误，请稍后重试';

@@ -9,32 +9,32 @@ class AppLogger {
     level: AppConstants.enableDebugLog ? logger.Level.debug : logger.Level.info,
   );
 
-  static void d(String message, [dynamic error, StackTrace? stackTrace]) {
+  static void d(String message) {
     if (AppConstants.enableDebugLog) {
-      _logger.d(message, error, stackTrace);
+      _logger.d(message);
     }
   }
 
-  static void i(String message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.i(message, error, stackTrace);
+  static void i(String message) {
+    _logger.i(message);
   }
 
-  static void w(String message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.w(message, error, stackTrace);
+  static void w(String message) {
+    _logger.w(message);
   }
 
-  static void e(String message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.e(message, error, stackTrace);
+  static void e(String message) {
+    _logger.e(message);
   }
 
-  static void v(String message, [dynamic error, StackTrace? stackTrace]) {
+  static void v(String message) {
     if (AppConstants.enableDebugLog) {
-      _logger.v(message, error, stackTrace);
+      _logger.v(message);
     }
   }
 
-  static void wtf(String message, [dynamic error, StackTrace? stackTrace]) {
-    _logger.wtf(message, error, stackTrace);
+  static void wtf(String message) {
+    _logger.wtf(message);
   }
 }
 
