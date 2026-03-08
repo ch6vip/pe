@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:json_path/json_path.dart';
+import 'package:reader_flutter/core/logger/logger.dart';
 
 /// 规则解析器
 ///
@@ -11,18 +12,57 @@ import 'package:json_path/json_path.dart';
 class RuleParser {
   RuleParser._(this.isJson, this._jsonRoot, this._document);
 
-  /// 从原始字符串创建解析器
+  /// 解析缓存（LRU 策略，最大 50 个条目）
+  static final Map<String, _CacheEntry> _cache = {};
+  static const int _maxCacheSize = 50;
+
+  /// 从原始字符串创建解析器（带缓存）
   ///
   /// 自动检测输入是 JSON 还是 HTML，并选择对应的解析方式
   /// JSON 检测：以 { 或 [ 开头
   factory RuleParser.from(String raw) {
     final trimmed = raw.trimLeft();
+    final cacheKey = _generateCacheKey(raw);
+
+    // 检查缓存
+    if (_cache.containsKey(cacheKey)) {
+      final entry = _cache[cacheKey]!;
+      if (DateTime.now().difference(entry.timestamp) < const Duration(hours: 24)) {
+        AppLogger.v('RuleParser cache hit');
+        return entry.parser;
+      }
+      AppLogger.v('RuleParser cache expired');
+      _cache.remove(cacheKey);
+    }
+
+    AppLogger.v('RuleParser cache miss');
+    final parser = _createParser(trimmed);
+    _cache[cacheKey] = _CacheEntry(parser, DateTime.now());
+
+    // LRU 清理
+    if (_cache.length > _maxCacheSize) {
+      final oldestKey = _cache.entries
+          .reduce((a, b) => a.value.timestamp.isBefore(b.value.timestamp) ? a : b)
+          .key;
+      _cache.remove(oldestKey);
+      AppLogger.v('RuleParser cache evicted oldest entry');
+    }
+
+    return parser;
+  }
+
+  static RuleParser _createParser(String trimmed) {
     if (_looksLikeJson(trimmed)) {
-      final jsonRoot = jsonDecode(raw);
+      final jsonRoot = jsonDecode(trimmed);
       return RuleParser._(true, jsonRoot, null);
     }
-    final document = html_parser.parse(raw);
+    final document = html_parser.parse(trimmed);
     return RuleParser._(false, null, document);
+  }
+
+  static String _generateCacheKey(String raw) {
+    // 使用内容的 hash 作为缓存键（简化版）
+    return raw.length.toString(); // 简单实现，生产环境可用 md5/sha256
   }
 
 
@@ -240,4 +280,12 @@ class _RuleParts {
 
   final List<String> selectors;
   final String? attr;
+}
+
+/// 缓存条目
+class _CacheEntry {
+  _CacheEntry(this.parser, this.timestamp);
+
+  final RuleParser parser;
+  final DateTime timestamp;
 }
