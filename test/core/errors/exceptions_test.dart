@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pe_reader/core/errors/exceptions.dart';
+import 'package:reader_flutter/core/errors/exceptions.dart';
 
 void main() {
   group('AppException', () {
