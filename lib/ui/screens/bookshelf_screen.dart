@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:reader_flutter/models/book.dart';
 import 'package:reader_flutter/ui/screens/reader_screen.dart';
+import 'package:reader_flutter/ui/widgets/book_cover.dart';
 import 'package:reader_flutter/services/storage_service.dart';
 
 /// Bookshelf screen
@@ -380,34 +381,14 @@ class _BookGridItem extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 封面图片
+          // 封面图片 - 使用 BookCover 组件
           Expanded(
             child: AspectRatio(
               aspectRatio: 3 / 4,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: Image.network(
-                  book.coverUrl,
-                  fit: BoxFit.cover,
-                  // 启用内存缓存，避免重复下载
-                  cacheWidth: 300, // 限制缓存图片宽度，减少内存占用
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey.shade200,
-                    child: const Icon(
-                      Icons.image_not_supported,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: Colors.grey.shade100,
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    );
-                  },
-                ),
+              child: BookCover(
+                url: book.coverUrl,
+                borderRadius: 8.0,
+                onTap: onTap,
               ),
             ),
           ),
