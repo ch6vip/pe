@@ -202,6 +202,18 @@ class Preferences {
     }
   }
 
+  /// 获取书源最后更新时间（时间戳）
+  static Future<int?> getSourcesLastUpdateTime() async {
+    final prefs = await _prefs;
+    return prefs.getInt(_lastSyncTimeKey);
+  }
+
+  /// 设置书源最后更新时间
+  static Future<void> setSourcesLastUpdateTime(int timestamp) async {
+    final prefs = await _prefs;
+    await prefs.setInt(_lastSyncTimeKey, timestamp);
+  }
+
   // ==================== 工具方法 ====================
 
   /// 清除所有数据
