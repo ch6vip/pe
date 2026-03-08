@@ -39,7 +39,7 @@ class AppLogger {
 }
 
 /// 自定义打印机，输出更简洁的日志格式
-class _CustomPrinter extends logger.Printer {
+class _CustomPrinter extends logger.LogPrinter {
   @override
   List<String> log(logger.LogEvent event) {
     final timestamp = DateTime.now().toIso8601String().split('T').last.substring(0, 8);

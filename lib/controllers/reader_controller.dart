@@ -7,6 +7,7 @@ import 'package:reader_flutter/services/api_service.dart';
 import 'package:reader_flutter/services/storage_service.dart';
 import 'package:reader_flutter/services/app_log_service.dart';
 import 'package:reader_flutter/services/source_manager_service.dart';
+import 'package:reader_flutter/core/errors/exceptions.dart';
 
 /// Reader controller
 ///
@@ -377,7 +378,7 @@ class ReaderController extends ChangeNotifier {
 
     if (message.contains('网络') ||
         message.contains('network') ||
-        e is ServerException e.statusCode != nulle.statusCode != null e.statusCode != null) {
+        (e is ServerException && e.statusCode != null)) {
       return '网络连接失败，请检查网络后重试';
     } else if (message.contains('解析') || message.contains('parse')) {
       return '数据格式错误，请稍后重试';

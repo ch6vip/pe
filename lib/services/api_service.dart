@@ -81,7 +81,7 @@ class ApiService {
         throw ValidationException('Search parsing not integrated, please configure JSON interface or integrate parsing engine');
       }
 
-      final books = _extractSearchBooks(response);
+      final books = _extractSearchBooks(response.body as Map<String, dynamic>);
       _log.i('Search completed, found ${books.length} books');
       return books;
     } catch (e) {
@@ -289,7 +289,7 @@ class ApiService {
     while (attempts < retries) {
       attempts++;
       try {
-        return await _client.get(uri).timeout(actualTimeout);
+        return await _client.get(uri).timeout(Duration(milliseconds: actualTimeout));
       } catch (e) {
         if (attempts >= retries) {
           _log.e('Network request failed (retries exhausted): $uri - $e');
