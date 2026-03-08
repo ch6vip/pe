@@ -1,3 +1,6 @@
+import 'package:reader_flutter/core/errors/exceptions.dart';
+import 'package:reader_flutter/core/logger/logger.dart';
+
 /// Book data model
 ///
 /// Represents basic information about a novel, including ID, metadata, and reading status
@@ -24,16 +27,30 @@ class Book {
   /// - `thumb_url`, `cover_url`, `coverUrl` -> [coverUrl]
   /// - `abstract`, `description` -> [description]
   factory Book.fromJson(Map<String, dynamic> json) {
+    final id = _parseId(json);
+    if (id.isEmpty) {
+      AppLogger.w('Book.fromJson: 缺少 ID 字段，数据: $json');
+    }
+
+    final name = _parseString(json, ['book_name', 'name'], '未知书名');
+    if (name == '未知书名') {
+      AppLogger.w('Book.fromJson: 缺少书名字段，数据: $json');
+    }
+
+    final author = _parseString(json, ['author'], '未知作者');
+    final coverUrl = _parseString(json, [
+      'thumb_url',
+      'cover_url',
+      'coverUrl',
+    ], _defaultCoverUrl);
+    final description = _parseString(json, ['abstract', 'description'], '暂无简介');
+
     return Book(
-      id: _parseId(json),
-      name: _parseString(json, ['book_name', 'name'], '未知书名'),
-      author: _parseString(json, ['author'], '未知作者'),
-      coverUrl: _parseString(json, [
-        'thumb_url',
-        'cover_url',
-        'coverUrl',
-      ], _defaultCoverUrl),
-      description: _parseString(json, ['abstract', 'description'], '暂无简介'),
+      id: id,
+      name: name,
+      author: author,
+      coverUrl: coverUrl,
+      description: description,
       bookSourceUrl: json['bookSourceUrl'] as String?,
       tocUrl: json['tocUrl'] as String?,
       originName: json['originName'] as String?,
@@ -56,12 +73,26 @@ class Book {
   /// }
   /// ```
   factory Book.fromSearchData(Map<String, dynamic> json) {
+    final id = json['book_id']?.toString() ?? '';
+    if (id.isEmpty) {
+      AppLogger.w('Book.fromSearchData: 缺少 book_id 字段，数据: $json');
+    }
+
+    final name = json['book_name']?.toString() ?? '未知书名';
+    if (name == '未知书名') {
+      AppLogger.w('Book.fromSearchData: 缺少 book_name 字段，数据: $json');
+    }
+
+    final author = json['author']?.toString() ?? '未知作者';
+    final coverUrl = json['thumb_url']?.toString() ?? _defaultCoverUrl;
+    final description = json['abstract']?.toString() ?? '暂无简介';
+
     return Book(
-      id: json['book_id']?.toString() ?? '',
-      name: json['book_name']?.toString() ?? '未知书名',
-      author: json['author']?.toString() ?? '未知作者',
-      coverUrl: json['thumb_url']?.toString() ?? _defaultCoverUrl,
-      description: json['abstract']?.toString() ?? '暂无简介',
+      id: id,
+      name: name,
+      author: author,
+      coverUrl: coverUrl,
+      description: description,
       bookSourceUrl: json['bookSourceUrl'] as String?,
       tocUrl: json['tocUrl'] as String?,
       originName: json['originName'] as String?,
