@@ -336,7 +336,7 @@ class SourceManagerService extends ChangeNotifier {
               sourcesToImport.add(source);
             } catch (e) {
               // Debug info: failed to parse a single source.
-              debugPrint('解析单个书源失败: $e, 数据: $item');
+              _log.w('解析单个书源失败: $e, 数据: $item');
             }
           }
         }

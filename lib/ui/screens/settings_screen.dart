@@ -193,7 +193,6 @@ class SettingsScreen extends StatelessWidget {
           subtitle: const Text('查看缓存大小、清理缓存'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
-            debugPrint('点击了缓存管理');
             // TODO: 跳转到缓存管理页面
           },
         ),
@@ -205,7 +204,6 @@ class SettingsScreen extends StatelessWidget {
           subtitle: const Text('导出书架数据'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
-            debugPrint('点击了数据备份');
             // TODO: 跳转到数据备份页面
           },
         ),
@@ -217,7 +215,6 @@ class SettingsScreen extends StatelessWidget {
           subtitle: const Text('从备份恢复书架'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
-            debugPrint('点击了数据恢复');
             // TODO: 跳转到数据恢复页面
           },
         ),
@@ -236,7 +233,7 @@ class SettingsScreen extends StatelessWidget {
           title: const Text('版本信息'),
           subtitle: const Text('v1.0.0'),
           onTap: () {
-            debugPrint('点击了版本信息');
+            // TODO: 显示版本信息对话框
           },
         ),
         ListTile(
@@ -244,7 +241,6 @@ class SettingsScreen extends StatelessWidget {
           title: const Text('开源协议'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
-            debugPrint('点击了开源协议');
             // TODO: 显示开源协议
           },
         ),
